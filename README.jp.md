@@ -234,7 +234,7 @@ GAS の現在の課題 :
 | Jump                       | Space Bar           | Yes                | C++             | ヒーローをジャンプさせる。                                                                                                                                                        |
 | Gun                        | Left Mouse Button   | No                 | C++             | ヒーローの銃から投射物を発射する。アニメーションは predicted （予測）されていますが、投射物はされていません。                                                                     |
 | Aim Down Sights            | Right Mouse Button  | Yes                | Blueprint       | ボタンを押している間、ヒーローは遅く歩きカメラはズームインし、より正確な射撃ができるようになります。                                                                              |
-| Sprint                     | Left Shift          | Yes                | Blueprint       | ボタンを押している間、ヒーローはスタミナを消費しながら早く走ります。                                                                                                              |
+| Sprint                     | Left Shift          | Yes                | Blueprint       | ボタンを押している間、ヒーローはスタミナを消費しながら速く走ります。                                                                                                              |
 | Forward Dash               | Q                   | Yes                | Blueprint       | ヒーローをスタミナを消費して前進させる。                                                                                                                                          |
 | Passive Armor Stacks       | Passive             | No                 | Blueprint       | ４秒毎にヒーローは最大４スタックのアーマーを獲得する。ダメージを受けるとアーマーのスタックを１失う。                                                                              |
 | Meteor                     | R                   | No                 | Blueprint       | プレイヤーは場所を指定して隕石を降らせて、敵にダメージを与えたりスタンさせたりします。ターゲティングは predicted （予測）されていますが、隕石はスポーンされていません。 |
@@ -622,7 +622,7 @@ virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
 ##### 4.4.2.2 実行時の AttributeSets の追加と削除
 
-`AttributeSets` は実行時に `ASC` から追加と削除が可能です。 ただし、 `AttributeSets` の削除は危険な場合があります。 たとえば、もし、 `AttributeSet` がサーバー側の前にクライアント側で削除され、 `Attribute` の値が変更がクライアントに複製された場合、 `AttributeSet` に `Attribute` が見つからず、その結果ゲームをクラッシュさせます。
+`AttributeSets` は実行時に `ASC` から追加と削除が可能です。 ただし、 `AttributeSets` の削除は危険な場合があります。 たとえば、もし、 `AttributeSet` がサーバー側の前にクライアント側で削除され、 `Attribute` の値が変更がクライアントにレプリケーションされた場合、 `AttributeSet` に `Attribute` が見つからず、その結果ゲームをクラッシュさせます。
 
 
 インベントリに武器を追加 :
@@ -651,7 +651,7 @@ AbilitySystemComponent->ForceReplication();
 
 ###### 4.4.2.3.1 アイテム毎の単純な float 値
 
-`Attributes` の代わりに、素の float 値をアイテムクラスのインスタンスに保存します。 Fortnite と [GASShooter](https://github.com/tranek/GASShooter) は銃の弾薬をこの方法で処理します。 銃の場合、最大挿弾子（弾倉）サイズ、現在の挿弾子（弾倉）内の弾薬数、予備弾薬などを、銃のインスタンスに複製された float 値（ `COND_OwnerOnly` ）として直接保存します。 もし武器が予備弾薬を共有する場合、予備弾薬をキャラクターの共有弾薬 `AttributeSet` の `Attribute` に移動させます （リロードアビリティは `Cost GE` を使用して予備弾薬から 銃の float 値の挿弾子（弾倉）弾薬に引き込むことが可能です）。 現在の挿弾子（弾倉）弾薬には `Attributes` を使用していないため、 `UGameplayAbility` でいくつかの関数をオーバーライドして銃の float 値に対してコストの確認と適用をする必要があります。 アビリティを付与する際に [`GameplayAbilitySpec`](https://github.com/tranek/GASDocumentation#concepts-ga-spec)の `SourceObject` を銃にするということはアビリティを付与した銃にアビリティの中でアクセスできるということを意味します。
+`Attributes` の代わりに、素の float 値をアイテムクラスのインスタンスに保存します。 Fortnite と [GASShooter](https://github.com/tranek/GASShooter) は銃の弾薬をこの方法で処理します。 銃の場合、最大挿弾子（弾倉）サイズ、現在の挿弾子（弾倉）内の弾薬数、予備弾薬などを、銃のインスタンスにレプリケーションされた float 値（ `COND_OwnerOnly` ）として直接保存します。 もし武器が予備弾薬を共有する場合、予備弾薬をキャラクターの共有弾薬 `AttributeSet` の `Attribute` に移動させます （リロードアビリティは `Cost GE` を使用して予備弾薬から 銃の float 値の挿弾子（弾倉）弾薬に引き込むことが可能です）。 現在の挿弾子（弾倉）弾薬には `Attributes` を使用していないため、 `UGameplayAbility` でいくつかの関数をオーバーライドして銃の float 値に対してコストの確認と適用をする必要があります。 アビリティを付与する際に [`GameplayAbilitySpec`](https://github.com/tranek/GASDocumentation#concepts-ga-spec)の `SourceObject` を銃にするということはアビリティを付与した銃にアビリティの中でアクセスできるということを意味します。
 
 自動発砲の間、銃が弾薬量をレプリケーションすることでローカルの弾薬量を壊すのを防ぐには、プレイヤーが `PreReplication()` で `IsFiring` `GameplayTag` を持つ間はレプリケーションを無効にします。 ここでは、本質的に独自の local prediction （ローカル予測）を行っていることになります。
 
@@ -781,7 +781,7 @@ void UGDAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 `REPNOTIFY_Always` は `OnRep` 関数に対し、ローカルの値が既にサーバーから（ prediction （予測）により）報告されている値と等しい場合に発動するように指示します。 デフォルトでは、`OnRep` 関数は、ローカルの値がサーバーから報告されている値と等しい場合には発動されません。
 
-もし `Attribute` が `Meta Attribute`のように複製されない場合、 `OnRep` と `GetLifetimeReplicatedProps` の手順は省略できます。
+もし `Attribute` が `Meta Attribute`のようにレプリケーションされない場合、 `OnRep` と `GetLifetimeReplicatedProps` の手順は省略できます。
 
 
 **[⬆ Back to Top](#table-of-contents)**
@@ -1397,7 +1397,7 @@ Snapshotting は `Attribute` を `GameplayEffectSpec` が作られた時にキ�
 | No       | Source           | 適用時                              |
 | No       | Target           | 適用時                              |
 
-`Attribute` のキャプチャの設定は、 Epic の ActionRPG Sample Project によって設定されたパターンに従って、「保持する構造体を定義」し、「`Attributes` をキャプチャする方法を定義」し、「構造体のコンストラクタ内で複製を１つ作成」します。 すべての `ExecCalc` に対し、同様の構造体を持つことになります。 **Note:** 各構造体は同一の namespace を共有するため、一意の名前が必要です。 構造体に同じ名前を使うと、 `Attributes` をキャプチャする際に誤った動作が発生します（殆どの場合、間違った `Attributes` の値がキャプチャされます）。
+`Attribute` のキャプチャの設定は、 Epic の ActionRPG Sample Project によって設定されたパターンに従って、「保持する構造体を定義」し、「`Attributes` をキャプチャする方法を定義」し、「構造体のコンストラクタ内でコピーを１つ作成」します。 すべての `ExecCalc` に対し、同様の構造体を持つことになります。 **Note:** 各構造体は同一の namespace を共有するため、一意の名前が必要です。 構造体に同じ名前を使うと、 `Attributes` をキャプチャする際に誤った動作が発生します（殆どの場合、間違った `Attributes` の値がキャプチャされます）。
 
 `Local Predicted （ローカル予測）` の為、 `Server Only` と `Server Initiated` [`GameplayAbilities`](#concepts-ga) はサーバー側でのみ `ExecCalc` が呼び出されます。
 
@@ -2450,7 +2450,7 @@ RTS ゲームのような、数百のキャラクターがワールドに同時�
 
 **Note:** `AbilityTasks` は１つのタイプの出力デリゲートのみを定義できます。 パラメータを使用していようがいまいがに関わらず、すべての出力デリゲートはこのタイプである必要があります。 未使用のデリゲートのパラメータはデフォルトの値を渡します。
 
-`AbilityTasks` は所有している `GameplayAbility` を実行しているクライアントまたはサーバーのみで実行されます; しかしながら、`AbilityTasks` はシミュレートされたクライアント上で実行するようにも設定できます。 そのためには `AbilityTask` のコンストラクタ内で `bSimulatedTask = true;` を設定し、 `virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent);` をオーバーライドし、レプリケーションするすべてのメンバ変数の設定を行います。 これはまれなシチュエーションでのみ役立ちます。 たとえば移動の `AbilityTasks` のように、すべての移動の更新をレプリケーションするのではなく、その代わりに移動の `AbilityTask` 全体をシミュレートしたい場合などです。 すべての `RootMotionSource` `AbilityTasks` はこれを行います。 例として `AbilityTask_MoveToLocation.h/.cpp` を参照してください。
+`AbilityTasks` は所有している `GameplayAbility` を実行しているクライアントまたはサーバーのみで実行されます ; しかしながら、`AbilityTasks` はシミュレートされたクライアント上で実行するようにも設定できます。 そのためには `AbilityTask` のコンストラクタ内で `bSimulatedTask = true;` を設定し、 `virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent);` をオーバーライドし、レプリケーションするすべてのメンバ変数の設定を行います。 これはまれなシチュエーションでのみ役立ちます。 たとえば移動の `AbilityTasks` のように、すべての移動の更新をレプリケーションするのではなく、その代わりに移動の `AbilityTask` 全体をシミュレートしたい場合などです。 すべての `RootMotionSource` `AbilityTasks` はこれを行います。 例として `AbilityTask_MoveToLocation.h/.cpp` を参照してください。
 
 `AbilityTasks` は `Tick` を利用できます。 そのためには `AbilityTask` のコンストラクタで `bTickingTask = true;` を設定し、 `virtual void TickTask(float DeltaTime);` をオーバーライドします。 これはフレーム間でスムースに値を lerp する必要がある場合に役立ちます。 例として `AbilityTask_MoveToLocation.h/.cpp` を参照してください。
 
@@ -2483,7 +2483,7 @@ Task->ReadyForActivation();
 
 ### 4.7.4 Root Motion Source Ability Tasks （ルートモーションソースを用いた Ability Tasks）
 
-GAS には、 `CharacterMovementComponent` にフックされた `Root Motion Sources` を使用して（ノックバック、複雑なジャンプ、ものを引っぱる、ダッシュなどの）`Characters` を時間の経過とともに移動させるための、 `AbilityTasks` が付属しています。
+GAS には、 `CharacterMovementComponent` にフックされた `Root Motion Sources` を使用して（ノックバック、複雑なジャンプ、プル、ダッシュなどの）`Characters` を時間の経過とともに移動させるための、 `AbilityTasks` が付属しています。
 
 **Note:** `RootMotionSource` `AbilityTasks` の Predicting （予測）はエンジンバージョンが 4.19 及び 4.25 以降で動作します。 エンジンバージョンが 4.20-4.24 では Prediction （予測） にバグがあります ; しかしながら、 `AbilityTasks` は、マルチプレイヤーではマイナーなネット修正を加えれば引き続き動作しますし、シングルプレイヤーでは完全に動作します。 [prediction fix （予測の修正）](https://github.com/EpicGames/UnrealEngine/commit/94107438dd9f490e7b743f8e13da46927051bf33#diff-65f6196f9f28f560f95bd578e07e290c) を 4.25 から 4.20-4.24 のカスタムエンジンへのチェリーピックが可能です。
 
@@ -2532,7 +2532,7 @@ GAS には、 `CharacterMovementComponent` にフックされた `Root Motion So
 
 ![GameplayCue Triggered from a GameplayAbility](https://github.com/tranek/GASDocumentation/raw/master/Images/gcfromga.png)
 
-C++ では、 `ASC` の関数（もしくはあなたの `ASC` のサブクラスでブループリントに公開されたそれら）を直接呼び出すことができます :
+C++ では、 `ASC` の関数を直接呼び出す（もしくは `ASC` のサブクラスでブループリントに公開する）ことができます :
 
 ```c++
 /** GameplayCues は 独自に提供することも可能です。 これらは（命中結果等々を受け渡すために）オプションのエフェクトコンテキストを受け取ります。 */
@@ -2556,7 +2556,7 @@ void RemoveAllGameplayCues();
 
 #### 4.8.3 Local Gameplay Cues （ローカル Gameplay Cues）
 
-`GameplayAbilities` と `ASC` から `GameplayCues` を発火するための公開された関数は、デフォルトでレプリケーションされます。 各 `GameplayCue` イベントは RPC をマルチキャストします。 このことは膨大な RPCs を発生させます。 GAS はまた、ネットの更新のたびに最大で２つの同じ `GameplayCue` の RPCs も実施します。 ローカルの `GameplayCues` を、使用できるところで使用することで、これを回避します。 ローカルの `GameplayCues` は `Execute` または `Add` または `Remove` のみを個々のクライアント上で行えます。
+`GameplayAbilities` と `ASC` から `GameplayCues` を発火するための公開された関数は、デフォルトでレプリケーションされます。 各 `GameplayCue` イベントは RPC をマルチキャストします。 このことは膨大な RPCs を発生させます。 GAS はまた、ネットの更新のたびに最大で２つの同じ `GameplayCue` の RPCs も実施します。 可能な限りローカルの `GameplayCues` を使用することで、これを回避しています。 ローカルの `GameplayCues` は `Execute` または `Add` または `Remove` のみを個々のクライアント上で行えます。
 
 ローカルの `GameplayCues` を使用できるシナリオ :
 * 投射物のインパクト
@@ -2672,7 +2672,7 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 
 #### 4.8.7 Gameplay Cue Batching （Gameplay Cue のバッチ処理）
 
-発動される各 `GameplayCue` は信頼性の低い NetMulticast RPC です。 複数の `GCs` を同時に発火する状況では、それらを１つの RPC に凝縮したり、より小さなデータを送ることで帯域幅を抑えたりするための最適化方法がいくつかあります。
+`GameplayCue` が発動される度に信頼性の低い NetMulticast RPC が発生します。 複数の `GCs` を同時に発火する状況では、それらを１つの RPC に凝縮したり、より小さなデータを送ることで帯域幅を抑えたりするための最適化方法がいくつかあります。
 
 <a name="concepts-gc-batching-manualrpc"></a>
 
@@ -2853,7 +2853,7 @@ Prediction （予測）キーは、アクティベーション prediction （予
 
 もし、独自の `AbilityTasks` の機能のために同期ポイントを追加したいならば、入力用のものが `WaitNetSync` `AbilityTask` のコードをそれらの中に、本質的にどの様に導入されているかを見てください。
 
-**Note:** `WaitNetSync` を使うと、サーバーの `GameplayAbility` がクライアントからの連絡があるまで、実行の継続をブロックします。 これは、悪意あるユーザーに、ゲームをハックし、意図的に新しいスコープ付き Prediction （予測）キーの送信を遅延するように悪用される可能性があります。 Epic は `WaitNetSync` を控えめに使用しているとはいえ、もしこれが懸念されるのならば、（クライアント無しで自動的に続行する遅延を使った）新しいバージョンの `AbilityTask` を構築することを潜在的におすすめします。
+**Note:** `WaitNetSync` を使うと、サーバーの `GameplayAbility` がクライアントからの連絡があるまで、実行の継続をブロックします。 これは、悪意あるユーザーに、ゲームをハックし、意図的に新しいスコープ付き Prediction （予測）キーの送信を遅延するように悪用される可能性があります。 Epic は `WaitNetSync` を控えめに使用しているとはいえ、もしこれが懸念されるのならば、（クライアント無しで自動的に続行する遅延を使った）新しいバージョンの `AbilityTask` を構築することをおすすめします。
 
 サンプルプロジェクトでは、スプリントの `GameplayAbility` で `WaitNetSync` を使い、スタミナコストを適用するたびに新しいスコープ付き Prediction （予測）ウィンドウを作成することで、predict （予測）できるようにしています。 理想的には、コストとクールダウンの適用する際に、有効な Prediction （予測）キーが欲しいところです。
 
@@ -2926,7 +2926,7 @@ Epic は近頃、`CharacterMovementComponent` を新しい `Network Prediction` 
 
 `TargetActors` は `AActor` に基づいており、ターゲットとする **場所** と **方法** を示すために、あらゆる種類の可視コンポーネントを持つことができます（スタティックメッシュやデカールのような）。 スタティックメッシュは、キャラクターが構築するオブジェクトの配置の視覚化に使用することができます。 デカールは地面に影響を与える範囲を示すために使用することができます。 サンプルプロジェクトでは、 [`AGameplayAbilityTargetActor_GroundTrace`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/AGameplayAbilityTargetActor_Grou-/index.html) を地面のデカールとして使用することで、メテオアビリティのダメージの影響を与える範囲を示しています。 また、何も表示しなくても構いません。 たとえば、 [GASShooter](https://github.com/tranek/GASShooter) で使用されている、（即時にターゲットまでの直線をトレースする）ヒットスキャンガンには何かを表示することに意味がありません。
 
-これらは、「基本のトレースまたはオーバーラップを使いターゲットの情報をキャプチャ」し、「 `TargetActor` の実装に基づいて、結果を `FHitResults` または `AActor` の配列として `TargetData` に変換」します。 `WaitTargetData` `AbilityTask` は、ターゲットが `TEnumAsByte<EGameplayTargetingConfirmation::Type> ConfirmationType` パラメータを通じて、いつ確認されるかを決定します。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` を使用 **しない** 場合、 `TargetActor` は通常、トレースとオーバーアラップを `Tick()` で行い、実装に従い `FHitResult` の座標を更新します。 トレースとオーバーアラップを `Tick()` で行いますが、レプリケーションされておらず、一般的には１つ以上（もっとあってもよいのですが）の `TargetActor` が一度に実行することはないので、通常はひどいことにはなりません。 それが `Tick()` を使用しており、複雑な `TargetActors` ではそこで多くのこと（たとえばGASShooter における ロケットランチャーのセカンダリーアビリティ）を行う可能性があることを、承知しておいてください。 `Tick()` でトレースするとクライアントの応答性が非常に良いですが、パフォーマンスヒットが大きすぎる場合は、 `TargetActor` tick の頻度を下げることを検討すべきです。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` のケースでは、 `TargetActor` はすぐにスポーンされ、 `TargetData` が生成し、破棄します。 `Tick()` は呼び出されません。
+これらは、「基本のトレースまたはオーバーラップを使いターゲットの情報をキャプチャ」し、「 `TargetActor` の実装に基づいて、結果を `FHitResults` または `AActor` の配列として `TargetData` に変換」します。 `WaitTargetData` `AbilityTask` は、ターゲットが `TEnumAsByte<EGameplayTargetingConfirmation::Type> ConfirmationType` パラメータを通じて、いつ確認されるかを決定します。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` を使用 **しない** 場合、 `TargetActor` は通常、トレースとオーバーアラップを `Tick()` で行い、実装に従い `FHitResult` の座標を更新します。 トレースとオーバーアラップを `Tick()` で行いますが、レプリケーションされておらず、一般的には１つ以上（もっとあってもよいのですが）の `TargetActor` が一度に実行することはないので、通常はひどいことにはなりません。 それが `Tick()` を使用しており、複雑な `TargetActors` ではそこで多くのこと（たとえばGASShooter における ロケットランチャーのセカンダリーアビリティ）を行う可能性があることを、承知しておいてください。 `Tick()` でトレースするとクライアントの応答性が非常に良いですが、パフォーマンスヒットが大きすぎる場合は、 `TargetActor` tick の頻度を下げることを検討すべきです。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` のケースでは、 `TargetActor` はすぐにスポーンされ、 `TargetData` を生成し、破棄します。 `Tick()` は呼び出されません。
 
 | `EGameplayTargetingConfirmation::Type` | いつターゲットが確認されるか                                                                                                                                                                                                                                                                                                                                                   |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -3051,7 +3051,7 @@ void SetReticleMaterialParamVector(FName ParamName, FVector value);
 
 スタンの間、新しい `GameplayAbilities` が有効になるのを阻害するには、 `GameplayAbilities` の [`Activation Blocked Tags` `GameplayTagContainer`](#concepts-ga-tags) にスタン `GameplayTag` を与えます。
 
-スタンの間、移動を阻害するには、`CharacterMovementComponent` の `GetMaxSpeed()` 関数をオーバーライドし、オーナーがスタン `GameplayTag` を所持していた場合は 0 を返すようにします。
+スタンの間、移動を阻害するには、`CharacterMovementComponent` の `GetMaxSpeed()` 関数をオーバーライドし、所有者がスタン `GameplayTag` を所持していた場合は 0 を返すようにします。
 
 **[⬆ Back to Top](#table-of-contents)**
 
@@ -3061,7 +3061,7 @@ void SetReticleMaterialParamVector(FName ParamName, FVector value);
 
 サンプルプロジェクトでは、スプリントする方法の例を提供しています - `Left Shift` を押されている間より速く走ります。
 
-より早い移動は、フラグをネットワークを介してサーバーに送信することで、 `CharacterMovementComponent` により predictively （予測）的に処理されます。 詳細については、 `GDCharacterMovementComponent.h/cpp` を参照してください。
+より速い移動は、フラグをネットワークを介してサーバーに送信することで、 `CharacterMovementComponent` により predictively （予測）的に処理されます。 詳細については、 `GDCharacterMovementComponent.h/cpp` を参照してください。
 
 `GA` は `Left Shift`の入力の応答を処理し、「 `CMC` にスプリントの開始と停止」と「 `Left Shift` が押されている間、 predictively （予測）的にスタミナの補充」を指示します。 詳細については、 `GA_Sprint_BP` を参照してください。
 
@@ -3278,7 +3278,7 @@ log list
 
 ### 7.3 AbilitySystemComponent Replication Mode
 
-デフォルトでは、 [`ASC`](#concepts-asc) は [`Full Replication Mode`](#concepts-asc-rm) です。 これにより、すべての [`GameplayEffects`](#concepts-ge) がすべてのクライアントにレプリケーションされます（これはシングルプレイヤーゲームには問題ありません。）。 マルチプレイヤーゲームでは、プレイヤーが所有する `ASCs` は `Mixed Replication Mode` を設定し、 AI 制御のキャラクターは `Minimal Replication Mode` を設定します。 これにより、プレイヤーキャラクターに適用された `GEs` はそのキャラクターの所有者のみに複製され、 AI 制御のキャラクターに適用された `GEs` はクライアントに複製されません。 [`GameplayTags`](#concepts-gt) は 引き続きレプリケーションされ、 [`GameplayCues`](#concepts-gc) は `Replication Mode` に関係なく、引き続き信頼性の低い NetMulticasts ですべてのクライアントに送られます。 これにより、すべてのクライアントが表示する必要がない場合、レプリケーションされる `GEs` からのネットワークのデータが削減されます。
+デフォルトでは、 [`ASC`](#concepts-asc) は [`Full Replication Mode`](#concepts-asc-rm) です。 これにより、すべての [`GameplayEffects`](#concepts-ge) がすべてのクライアントにレプリケーションされます（これはシングルプレイヤーゲームには問題ありません。）。 マルチプレイヤーゲームでは、プレイヤーが所有する `ASCs` は `Mixed Replication Mode` を設定し、 AI 制御のキャラクターは `Minimal Replication Mode` を設定します。 これにより、プレイヤーキャラクターに適用された `GEs` はそのキャラクターの所有者のみにレプリケーションされ、 AI 制御のキャラクターに適用された `GEs` はクライアントにレプリケーションされません。 [`GameplayTags`](#concepts-gt) は 引き続きレプリケーションされ、 [`GameplayCues`](#concepts-gc) は `Replication Mode` に関係なく、引き続き信頼性の低い NetMulticasts ですべてのクライアントに送られます。 これにより、すべてのクライアントが表示する必要がない場合、レプリケーションされる `GEs` からのネットワークのデータが削減されます。
 
 > Translators notes:SentyaAnko  
 > This translation is likely to be incorrect.  
