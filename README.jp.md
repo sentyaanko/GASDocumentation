@@ -1,4 +1,4 @@
-# GASDocumentation
+﻿# GASDocumentation
 
 シンプルなマルチプレイヤーサンプルプロジェクトを使用した、 Unreal Engine 4 の GameplayAbilitySystem プラグイン (GAS) についての私の理解。これは公式のドキュメントではなく、このプロジェクトも私も EpicGames と提携していません。私はこの情報の正確性を保証しません。
 
