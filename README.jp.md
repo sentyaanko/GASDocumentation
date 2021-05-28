@@ -237,7 +237,7 @@ GAS の現在の課題 :
 | Sprint                     | Left Shift          | Yes                | Blueprint       | ボタンを押している間、ヒーローはスタミナを消費しながら速く走ります。                                                                                                              |
 | Forward Dash               | Q                   | Yes                | Blueprint       | ヒーローをスタミナを消費して前進させる。                                                                                                                                          |
 | Passive Armor Stacks       | Passive             | No                 | Blueprint       | ４秒毎にヒーローは最大４スタックのアーマーを獲得する。ダメージを受けるとアーマーのスタックを１失う。                                                                              |
-| Meteor                     | R                   | No                 | Blueprint       | プレイヤーは場所を指定して隕石を降らせて、敵にダメージを与えたりスタンさせたりします。ターゲティングは predicted （予測）されていますが、隕石はスポーンされていません。 |
+| Meteor                     | R                   | No                 | Blueprint       | プレイヤーは場所を指定して隕石を降らせて、敵にダメージを与えたりスタンさせたりします。ターゲティングは predicted （予測）されていますが、隕石はスポーンされていません。           |
 
 `GameplayAbilities` が C++ とブループリントのどちらで作成されているのかは問いません。ここではそれぞれの言語でどのように行うかの例として、両者を混ぜたものを使用しています。
 
@@ -3032,7 +3032,7 @@ void SetReticleMaterialParamVector(FName ParamName, FVector value);
 
 #### 4.11.5 Gameplay Effect Containers Targeting （Gameplay Effect コンテナのターゲティング）
 
-[`GameplayEffectContainers`](#concepts-ge-containers) には、 [`TargetData`](#concepts-targeting-data) を生成するための、オプションの効率的な手段が付属しています。 このターゲティングは、 `EffectContainer` がクライアントとサーバーに適用されたら、即座に実行されます。 これは [`TargetActors`](#concepts-targeting-actors) より効率的です。 なぜなら、ターゲットオブジェクトの CDO (ClassDefaultObject) （スポーンも履きもされない `Actors` ）で実行されるからです。 しかし、プレイヤーの入力がなく、確認を必要とせず即座に発生し、キャンセルできず、クライアントからサーバーにデータを送ることができません（両方でデータを生成します）。 インスタントトレースやコリジョンオーバーラップに適しています。 Epic の [Action RPG Sample Project](https://www.unrealengine.com/marketplace/en-US/slug/action-rpg) にコンテを使用した二種類のターゲティングの例が含まれています - アビリティの所有者をターゲットにすることと、イベントから `TargetData` を引き出すことです 。 １つはブループリントでプレイヤーからのオフセット（子のブループリントクラスで設定）を即座にスフィアトレースする実装をしています。 独自のターゲティングタイプを作るために、 C++ またはブループリントで `URPGTargetType` をサブクラス化できます。
+[`GameplayEffectContainers`](#concepts-ge-containers) には、 [`TargetData`](#concepts-targeting-data) を生成するための、オプションの効率的な手段が付属しています。 このターゲティングは、 `EffectContainer` がクライアントとサーバーに適用されたら、即座に実行されます。 これは [`TargetActors`](#concepts-targeting-actors) より効率的です。 なぜなら、ターゲットオブジェクトの CDO (ClassDefaultObject) （スポーンも破棄もされない `Actors` ）で実行されるからです。 しかし、プレイヤーの入力がなく、確認を必要とせず即座に発生し、キャンセルできず、クライアントからサーバーにデータを送ることができません（両方でデータを生成します）。 インスタントトレースやコリジョンオーバーラップに適しています。 Epic の [Action RPG Sample Project](https://www.unrealengine.com/marketplace/en-US/slug/action-rpg) にコンテを使用した二種類のターゲティングの例が含まれています - アビリティの所有者をターゲットにすることと、イベントから `TargetData` を引き出すことです 。 １つはブループリントでプレイヤーからのオフセット（子のブループリントクラスで設定）を即座にスフィアトレースする実装をしています。 独自のターゲティングタイプを作るために、 C++ またはブループリントで `URPGTargetType` をサブクラス化できます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
