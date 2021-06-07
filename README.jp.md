@@ -153,7 +153,7 @@
 >    9.1 [`LogAbilitySystem: Warning: Can't activate LocalOnly or LocalPredicted ability %s when not local!`](#troubleshooting-notlocal)  
 >    9.2 [`ScriptStructCache` errors](#troubleshooting-scriptstructcache)  
 >    9.3 [Animation Montages are not replicating to clients](#troubleshooting-replicatinganimmontages)  
->    9.4 [Duplicating Blueprint Actors is setting AttributeSets to nullptr](#troubleshooting-duplicatingblueprintactors)  
+>    9.4 [Duplicating Blueprint Actors is setting AttributeSets to nullptr ( Blueprint のアクターを複製すると、AttributeSets が nullptr に設定される)](#troubleshooting-duplicatingblueprintactors)  
 > 1. [Common GAS Acronyms （一般的な GAS の頭字語）](#acronyms)  
 > 1. [Other Resources](#resources)
 > 1. [GAS Changelog](#changelog)  
@@ -3363,8 +3363,9 @@ Fortnite Battle Royale (FNBR) は多くのダメージを与える `AActors` （
 
 <a name="troubleshooting-duplicatingblueprintactors"></a>
 
-### 9.4 Duplicating Blueprint Actors is setting AttributeSets to nullptr
-There is a [bug in Unreal Engine](https://issues.unrealengine.com/issue/UE-81109) that will set `AttributeSet` pointers on your classes to nullptr for Blueprint Actor classes that are duplicated from existing Blueprint Actor classes. There are a few workarounds for this. I've had success not creating bespoke `AttributeSet` pointers on my classes (no pointer in the .h, not calling `CreateDefaultSubobject` in the constructor) and instead just directly adding `AttributeSets` to the `ASC` in `PostInitializeComponents()` (not shown in the Sample Project). The replicated `AttributeSets` will still live in the `ASC's` `SpawnedAttributes` array. It would look something like this:
+### 9.4 Duplicating Blueprint Actors is setting AttributeSets to nullptr ( Blueprint のアクターを複製すると、AttributeSets が nullptr に設定される)
+
+[Unreal Engine にバグ](https://issues.unrealengine.com/issue/UE-81109) があり、既存のブループリントアクタークラスを複製すると、 `AttributeSet` のポインタが nullptr に設定されてしまいます。 この問題はいくつかの回避策があります。 私は特別な `AttributeSet` のポインタをクラスに作成せず （ .h にポインタがなく、コンストラクタで `CreateDefaultSubobject` を呼び出さない ）、代わりに `AttributeSets` を `PostInitializeComponents()` 内で `ASC` に直接追加することに成功しました。（サンプルプロジェクトでは示されていません。）
 
 ```c++
 void AGDPlayerState::PostInitializeComponents()
@@ -3374,22 +3375,23 @@ void AGDPlayerState::PostInitializeComponents()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->AddSet<UGDAttributeSetBase>();
-		// ... any other AttributeSets that you may have
+		// ... その他の AttributeSets があれば、それも含めます。
 	}
 }
 ```
 
-In this scenario, you would read and set the values in the `AttributeSet` using the functions on the `ASC` instead of [calling functions on the `AttributeSet` made from the macros](#concepts-as-attributes).
+このシナリオでは、[マクロで作られた `AttributeSet` 上の関数を呼び出す](#concepts-as-attributes) 代わりに、 `ASC` 上の関数を使って `AttributeSet` の値を読み書きします。
+
 
 ```c++
-/** Returns current (final) value of an attribute */
+/** アトリビュートの現在値（最終値）を取得します。 */
 float GetNumericAttribute(const FGameplayAttribute &Attribute) const;
 
-/** Sets the base value of an attribute. Existing active modifiers are NOT cleared and will act upon the new base value. */
+/** アトリビュートの基本値を設定します。既存のアクティブな modifier はクリアされず、新しい基本値に基づいて動作します。 */
 void SetNumericAttributeBase(const FGameplayAttribute &Attribute, float NewBaseValue);
 ```
 
-So the `GetHealth()` would look something like:
+つまり、 `GetHealth()` `GetHealth()`は以下のようになります :
 
 ```c++
 float AGDPlayerState::GetHealth() const
@@ -3403,7 +3405,7 @@ float AGDPlayerState::GetHealth() const
 }
 ```
 
-Setting (initializing) the health `Attribute` would look something like:
+ヘルス `Attribute` を設定（初期化）するには、以下のようになります。
 
 ```c++
 const float NewHealth = 100.0f;
@@ -3413,7 +3415,7 @@ if (AbilitySystemComponent)
 }
 ```
 
-As a reminder, the `ASC` only ever expects at most one `AttributeSet` object per `AttributeSet` class.
+念のため、 `ASC` が想定しているのは、 `AttributeSet` クラス毎に最大 1 つの `AttributeSet` オブジェクトです。
 
 **[⬆ Back to Top](#table-of-contents)**
 
