@@ -153,6 +153,7 @@
 >    9.1 [`LogAbilitySystem: Warning: Can't activate LocalOnly or LocalPredicted ability %s when not local!`](#troubleshooting-notlocal)  
 >    9.2 [`ScriptStructCache` errors](#troubleshooting-scriptstructcache)  
 >    9.3 [Animation Montages are not replicating to clients](#troubleshooting-replicatinganimmontages)  
+>    9.4 [Duplicating Blueprint Actors is setting AttributeSets to nullptr](#troubleshooting-duplicatingblueprintactors)  
 > 1. [Common GAS Acronyms （一般的な GAS の頭字語）](#acronyms)  
 > 1. [Other Resources](#resources)
 > 1. [GAS Changelog](#changelog)  
@@ -3356,6 +3357,63 @@ Fortnite Battle Royale (FNBR) は多くのダメージを与える `AActors` （
 ### 9.3 Animation Montages are not replicating to clients
 
 [GameplayAbilities](#concepts-ga) で、 `PlayMontage` の代わりに `PlayMontageAndWait` ブループリントノードを使っているかを確認してください。 この [AbilityTask](#concepts-at) は `ASC` を介してモンタージュを自動的にレプリケーションしますが、 `PlayMontage` ノードはそうではありません。
+
+
+**[⬆ Back to Top](#table-of-contents)**
+
+<a name="troubleshooting-duplicatingblueprintactors"></a>
+
+### 9.4 Duplicating Blueprint Actors is setting AttributeSets to nullptr
+There is a [bug in Unreal Engine](https://issues.unrealengine.com/issue/UE-81109) that will set `AttributeSet` pointers on your classes to nullptr for Blueprint Actors that are duplicated from existing Blueprint Actors. There are a few workarounds for this. I've had success not creating bespoke `AttributeSet` pointers on my classes (no pointer in the .h, not calling `CreateDefaultSubobject` in the constructor) and instead just directly adding `AttributeSets` to the `ASC` in `PostInitializeComponents()` (not shown in the Sample Project). The replicated `AttributeSets` will still live in the `ASC's` `SpawnedAttributes` array. It would look something like this:
+
+```c++
+void AGDPlayerState::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->AddSet<UGDAttributeSetBase>();
+		// ... any other AttributeSets that you may have
+	}
+}
+```
+
+In this scenario, you would read and set the values in the `AttributeSet` using the functions on the `ASC` instead of [calling functions on the `AttributeSet` made from the macros](#concepts-as-attributes).
+
+```c++
+/** Returns current (final) value of an attribute */
+float GetNumericAttribute(const FGameplayAttribute &Attribute) const;
+
+/** Sets the base value of an attribute. Existing active modifiers are NOT cleared and will act upon the new base value. */
+void SetNumericAttributeBase(const FGameplayAttribute &Attribute, float NewBaseValue);
+```
+
+So the `GetHealth()` would look something like:
+
+```c++
+float AGDPlayerState::GetHealth() const
+{
+	if (AbilitySystemComponent)
+	{
+		return AbilitySystemComponent->GetNumericAttribute(UGDAttributeSetBase::GetHealthAttribute());
+	}
+
+	return 0.0f;
+}
+```
+
+Setting (initializing) the health `Attribute` would look something like:
+
+```c++
+const float NewHealth = 100.0f;
+if (AbilitySystemComponent)
+{
+	AbilitySystemComponent->SetNumericAttributeBase(UGDAttributeSetBase::GetHealthAttribute(), NewHealth);
+}
+```
+
+As a reminder, the `ASC` only ever expects at most one `AttributeSet` object per `AttributeSet` class.
 
 **[⬆ Back to Top](#table-of-contents)**
 
