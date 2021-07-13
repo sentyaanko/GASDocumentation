@@ -3465,6 +3465,7 @@ if (AbilitySystemComponent)
 
 [GAS に関する Unreal Slackers Discord Server コミュニティの質問に対する Dave Ratti 氏の回答](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89):
 
+
 1. GameplayAbilities に関係なく、必要に応じてスコープ付きの prediction （予測）ウィンドウを作成するためにはどうすればよいでしょうか？例えば、ファイア・アンド・フォーゲット発射体が敵に当たった時に、ダメージの GameplayEffect を locally predict （ローカル予測）するには？
 
 >> 補足
@@ -3497,6 +3498,7 @@ if (AbilitySystemComponent)
 > これらの種類のイベントはクライアント側で既に生成されているので、レプリケーションしない GampeplayCue を呼び出すことは大したことではありませんでした。
 > 複雑なブループリントは厄介なので、何がどこで実行されているかを理解しているかどうかは作者次第です。
 
+
 2. WaitNetSync AbilityTask を OnlyServerWait を指定して、 locally predicted （ローカル予測）された GameplayAbility にスコープ付き Prediction （予測）ウィンドウを作成した場合、サーバーが prediction key （予測キー）を含む RPC を待っているため、サーバーへのパケットを遅らせて GameplayAbility のタイミングをコントロールすることで、プレイヤーは潜在的に不正行為が行えますか？ Paragon や Fortnite ではこのような問題が発生したことはありますか？また、発生した場合、 Epic はどのように対処しましたか？
 
 >> 補足
@@ -3519,6 +3521,7 @@ if (AbilitySystemComponent)
 > 私の考えでは、これはおそらくシステム全体で解決できることだと思いますが、私達がすぐに変更することはないでしょう。
 > WaitNetSync をスポット的に修正して、あなたの言うケースの最大遅延を含めることはおそらく合理的なタスクですが、やはり当分の間、私達の側でこれを行うことはなさそうです。
 
+
 3. どの EGameplayEffectReplicationMode を Paragon と Fortnite では使用していて、また、 Epic のおすすめは、いつそれぞれを使用するのか？
 
 > どちらのゲームも、プレイヤーが操作するキャラクターには Mixed モードを、 AI が操作するキャラクター（AI ミニオン、ジャングルクリープ、AI ハスク等）には Minimal モードを基本的に使用しています。
@@ -3536,6 +3539,7 @@ if (AbilitySystemComponent)
 > 
 > その後に行われた他のサーバーサイドの最適化（レプリケーショングラフなど）で、いまだに必要かどうかはわかりませんし、この方法は最もメンテナンス性が高いパターンでもありません。
 
+
 4. GameplayPrediction.h にあるように、 GameplayEffects の除去を predict （予測）することができませんが、 GameplayEffects の除去におけるレイテンシーの影響を軽減する戦略はありますか？ 例えば、移動速度の低下を除去する時に、現在ではサーバーが GameplayEffect の除去を複製してプレイヤーのキャラクターの位置をスナップするのを待つ必要があります。
 
 > これは難しい問題で、良い答えはありません。
@@ -3549,6 +3553,7 @@ if (AbilitySystemComponent)
 > もし本当に絶望的なケースがあると考えるのであれば、移動速度 GE を阻害する GE を predictively （予測的）に追加することができます。
 > 私自身はやったことはありませんが、以前に理論的に考えたことがあります。あるクラスの問題に役に立つ事ができるかもしれません。
 
+
 5. AbilitySystemComponent は Paragon と Fortnite では PlayerState に、 Action RPG Sample では Character に置かれていることを知っています。
 AbilitySystemComponent はどこに置かれるべきか、そのオーナーは何であるべきか、 Epic の内部規則、ガイドライン、又は推奨事項はなんですか？
 
@@ -3557,6 +3562,7 @@ AbilitySystemComponent はどこに置かれるべきか、そのオーナーは
 > リスポーンするものは、オーナーとアバターを別のものにして、 AbilitySystemComponent をリスポーン後にセーブオフ/再作成/復元 する必要がないようにします。
 PlayerState は論理的な選択で、すべてのクライアントにレプリケーションされます（ PlayerController はそうではありません）。
 欠点として、 PlayerState は常に relevant （関連している）ので、 100 人規模のゲームでは問題が発生する可能性があります。（質問 3 で FN (Fortnite) が行ったことについてのメモを参照してください）。
+
 
 6. 所有者は同じだがアバターが異なる複数の AbilitySystemComponents を持つことは可能でしょうか（例えば、オーナーが PlayerState に設定されているポーンと weapon/items/projectiles の場合）？
 
@@ -3571,6 +3577,7 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 > これはうまくいくと思います。
 > しかし、同じオーナーのもとに複数の ASC が存在するのは厄介なことになるかもしれません。
 
+
 7. locally predicted （ローカル予測）されたアビリティのクールダウン期間を、サーバーが Owning Client （所有クライアント）に上書きしないようにする方法はありますか？ 遅延が大きいシナリオでは、ローカルのクールダウン期間が終了したが、サーバー上ではまだクールダウン期間中である場合に、 Owning Client （所有クライアント）が能力の有効化を再度「試みる」ことになります。 Owning Client （所有クライアント）の有効化の要求がネットワーク経由でサーバーに到達する頃には、サーバーはクールダウンを解除しているか、サーバーは残りのミリ秒の間、有効化の要求をキューに入れることができるかもしれません。 さもなければ、レイテンシーの高いクライアントは、レイテンシーの低いクライアントに比べて、アビリティを再起動するまでの時間が長くなります。 これは、クールダウンが 1 秒以下のベーシックアタックのように、クールダウンが非常に短いアビリティで顕著に現れます。 サーバーが locally predicted （ローカル予測）されるアビリティのクールダウン時間を上書きしないようにする方法がないとしたら、アビリティの再活性化に対する高いレイテンシーの影響を緩和するための Epic の戦略は何でしょうか？ 別の例に基づいた言い方をすると、 Paragon のベーシックアタックやその他のアビリティは、高いレイテンシーのプレイヤーが、 local prediction （ローカル予測）された低いレイテンシーのプレイヤーと同じ速度で攻撃や起動ができるように、 Epic はどのように設計したのでしょうか？
 
 > 簡潔に答えると、これを防ぐ方法はなく、 Paragon にはこの問題がありました。高いレイテンシーの接続では、ベーシックアタックの ROF （rate of fire 、銃器の連射速度）が低くなります。
@@ -3581,9 +3588,6 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 > 
 > Fortnite では、武器の発射頻度について、独自のブックキーピング行っています：武器のクールダウンに GE を使用していません。これがゲームにとって重要な問題であれば、この方法をおすすめします。
 
-
-
----
 
 8. GameplayAbilitySystem プラグインの Epic のロードマップはなんですか？ Epic は 2019 年以降にどのような機能を追加する予定ですか？
 
@@ -3613,54 +3617,26 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 >   これはイベントを持ち、ブループリント可能な「インスタンス化されていない能力オブジェクト」であるべきでした。  
 >   UGameplayAbility は「実行ごとにインスタンス化される」オブジェクトであるべきです。  
 >   実際にインスタンスを作成する必要がある場合はオプションにすることもできます：その代わり、「インスタンス化されない」アビリティは新しい UGameplayAbilitySpec を介して実装されます。
+> * システムは「 filtered GE application container 」（どの GE をどのアクターに適用するかをより高レベルのゲームプレイロジックで駆動する）など、より「中間レベル」の構成要素を提供すべきです。  
+>   「オーバーラッピングボリュームのサポート」（コリジョンプリミティブのオーバラップイベントに基づいて、「 Filtered GE application container 」を適用する）等です。  
+>   これらは全てのプロジェクトがそれぞれの方法で実装することになるビルディングブロックです。  
+>   これらを正しく実装することはかんたんなことではありませんので、基本的な実装方法をもっとうまく提供すべきだと思います。
+> * 一般的に、プロジェクトを立ち上げるために必要な定型文を減らします。  
+>   おそらく、パッシブアビリティやベーシックヒットスキャンの武器のようなものを out of the box （すぐに使える状態で）提供するために、「 Ex ライブラリ」などの別モジュールを用意するでしょう。  
+>   このモジュールはオプションですが、すぐに稼働させることができるでしょう。
+> * GameplayCues をアビリティシステムと連動しない別のモジュールに移したいと思います。  
+>   ここは改善すべき点がたくさんあると思います。
 
-
-
-
-> * The system should provide more “middle level” constructs such as “filtered GE application container” (data drive what GEs to apply to which actors with higher level gameplay logic), “Overlapping volume support” (apply the “Filtered GE application container” based on collision primitive overlap events), etc.These are building blocks that every project ends up implementing in their own way. Getting them right is non trivial so I think we should do a better job providing some basic implementations. 
-> * In general, reducing boilerplate needed to get your project up and running. Possibly a separate module “Ex library” or whatever that could provide things like passive abilities or basichitscan weapons out of the box. This module would be optional but would get you up and running quickly.
-> * I would like to move GameplayCues to a separate module that is not coupled with the ability system. I think there are a lot of improvements that could be made here.
-
-This is only my personal opinion and not a commitment from anyone. I think the most realistic course of action will be as new engine tech initiatives come through, the ability system will need to be updated and that will be a time to do this sort of thing. These initiatives could be related to scripting, networking, or physics/character movement. This is all very far looking ahead though so I cannot give commitments or estimates on timelines.
-
-
-
-> * システムは、「フィルタリングされたGEアプリケーション・コンテナ」（どのGEをどのアクターに適用するかを、より高レベルのゲームプレイ・ロジックでデータ駆動する）、「オーバーラッピング・ボリューム・サポート」（コリジョン・プリミティブのオーバーラップ・イベントに基づいて「フィルタリングされたGEアプリケーション・コンテナ」を適用する）など、より「中間レベル」の構成要素を提供すべきです。これらの構成要素は、各プロジェクトがそれぞれの方法で実装することになります。正しく実装することは簡単なことではありません。
-> 一般的には、プロジェクトを立ち上げるために必要な定型的なものを減らします。パッシブアビリティーやバシチスキャン武器のようなものを提供するために、"Exライブラリ "などの別モジュールを用意することも考えられます。このモジュールはオプションですが、すぐに使用できるようになるでしょう。
-> GameplayCuesを能力システムとは別のモジュールに移したいと思います。このモジュールには多くの改善点があると思います。
-
-これはあくまでも個人的な意見であり、誰かに約束してもらうわけではありません。最も現実的な方法は、新しいエンジン技術の構想が出てきたときに、能力システムを更新する必要があり、そのときにこのようなことをするのではないかと考えています。このような取り組みは、スクリプト、ネットワーク、物理/キャラクターの動きなどに関連するものです。しかし、これは非常に先のことなので、タイムラインの確約や見積もりはできません。
-
-
-
----
-8. What is Epic’s roadmap for the GameplayAbilitySystem plugin? Which features does Epic plan to add in 2019 and beyond?
-
-> We feel that overall the system is pretty stable at this point and we don’t have anyone working on major new features. Bug fixes and small improvements occasionally are made for Fortnite or from UDN/pull requests, but that is it right now.
->
-> Longer term, I think we will eventually do a “V2” or some big changes. We learned a lot from writing this system and feel we got a lot right and a lot wrong. I would love a chance to correct those mistakes and improve some of the fatal flaws that were pointed out above.
->
-> If a V2 was to ever come, providing an upgrade path would be of utmost importance. We would never make a V2 and leave Fortnite on V1 forever: there would be some path or procedures that would automatically migrate as much as possible, though there would still almost certainly be some manual remaking required.
->
-> The high priority fixes would be:
-> * Better interoperability with the character movement system. Unifying client prediction.
-> * GE removal prediction (question #4)
-> * GE latency reconciliation (question #8)
-> * Generalized network optimizations such as batching RPCs and proxy structures. Mostly the stuff that we’ve done for Fortnite but find ways to break it down into more generalized form, at least so that games can write their own game specific optimizations more easily.
->
-> The more general refactor type of changes I would consider making:
-> * I would like to look at fundamentally moving away from having GEs reference spreadsheet values directly, instead they would be able to emit parameters and those parameters could be filled by some higher level object that is bound to spreadsheet values. The problem with the current model is that GEs become unsharable due to their tight coupling with the curve table rows. I think a generalized system for parameterization could be written and be the underpinning of a V2 system.
-> * Reduce number of “policies” on UGameplayAbility. I would remove ReplicationPolicy InstancingPolicy. Replication is, imo, almost never actually needed and causes confusion. InstancingPolicy should be replaced instead by making FGameplayAbilitySpec a UObject that can be subclassed. This should have been the “non instantiated ability object” that has events and is blueprintable. The UGameplayAbility should be the “instanced per execution” object. It could be optional if you need to actually instantiate: instead “non instanced” abilities would be implemented via the new UGameplayAbilitySpec object.
-> * The system should provide more “middle level” constructs such as “filtered GE application container” (data drive what GEs to apply to which actors with higher level gameplay logic), “Overlapping volume support” (apply the “Filtered GE application container” based on collision primitive overlap events), etc.These are building blocks that every project ends up implementing in their own way. Getting them right is non trivial so I think we should do a better job providing some basic implementations. 
-> * In general, reducing boilerplate needed to get your project up and running. Possibly a separate module “Ex library” or whatever that could provide things like passive abilities or basichitscan weapons out of the box. This module would be optional but would get you up and running quickly.
-> * I would like to move GameplayCues to a separate module that is not coupled with the ability system. I think there are a lot of improvements that could be made here.
-
-This is only my personal opinion and not a commitment from anyone. I think the most realistic course of action will be as new engine tech initiatives come through, the ability system will need to be updated and that will be a time to do this sort of thing. These initiatives could be related to scripting, networking, or physics/character movement. This is all very far looking ahead though so I cannot give commitments or estimates on timelines.
+これは私の個人的な意見であり、誰かに約束されたものではありません。
+最も現実的な方法は、新しいエンジン技術の構想が出た時に、アビリティシステムを更新する必要があり、その時にこのようなことをするのではないかと考えています。
+このような取り組みは、スクリプト、ネットワーク、物理/キャラクターの移動などに関連するものです。
+しかし、これは非常に先のことなので、タイムラインの確約や見積もりはできません。
 
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="resources-daveratti-community2"></a>
+
 #### 11.1.2 Community Questions 2
 Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 
