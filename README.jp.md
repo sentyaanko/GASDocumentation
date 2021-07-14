@@ -3466,7 +3466,8 @@ if (AbilitySystemComponent)
 [GAS に関する Unreal Slackers Discord Server コミュニティの質問に対する Dave Ratti 氏の回答](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89):
 
 
-1. GameplayAbilities に関係なく、必要に応じてスコープ付きの prediction （予測）ウィンドウを作成するためにはどうすればよいでしょうか？例えば、ファイア・アンド・フォーゲット発射体が敵に当たった時に、ダメージの GameplayEffect を locally predict （ローカル予測）するには？
+1. GameplayAbilities に関係なく、必要に応じてスコープ付きの prediction （予測）ウィンドウを作成するためにはどうすればよいでしょうか？  
+   例えば、ファイア・アンド・フォーゲット発射体が敵に当たった時に、ダメージの GameplayEffect を locally predict （ローカル予測）するには？
 
 >> 補足
 >> fire and forget projectile
@@ -3499,7 +3500,9 @@ if (AbilitySystemComponent)
 > 複雑なブループリントは厄介なので、何がどこで実行されているかを理解しているかどうかは作者次第です。
 
 
-2. WaitNetSync AbilityTask を OnlyServerWait を指定して、 locally predicted （ローカル予測）された GameplayAbility にスコープ付き Prediction （予測）ウィンドウを作成した場合、サーバーが prediction key （予測キー）を含む RPC を待っているため、サーバーへのパケットを遅らせて GameplayAbility のタイミングをコントロールすることで、プレイヤーは潜在的に不正行為が行えますか？ Paragon や Fortnite ではこのような問題が発生したことはありますか？また、発生した場合、 Epic はどのように対処しましたか？
+2. WaitNetSync AbilityTask を OnlyServerWait を指定して、 locally predicted （ローカル予測）された GameplayAbility にスコープ付き Prediction （予測）ウィンドウを作成した場合、サーバーが prediction key （予測キー）を含む RPC を待っているため、サーバーへのパケットを遅らせて GameplayAbility のタイミングをコントロールすることで、プレイヤーは潜在的に不正行為が行えますか？  
+   Paragon や Fortnite ではこのような問題が発生したことはありますか？  
+   また、発生した場合、 Epic はどのように対処しましたか？
 
 >> 補足
 >> exploits (exploit code)
@@ -3540,7 +3543,8 @@ if (AbilitySystemComponent)
 > その後に行われた他のサーバーサイドの最適化（レプリケーショングラフなど）で、いまだに必要かどうかはわかりませんし、この方法は最もメンテナンス性が高いパターンでもありません。
 
 
-4. GameplayPrediction.h にあるように、 GameplayEffects の除去を predict （予測）することができませんが、 GameplayEffects の除去におけるレイテンシーの影響を軽減する戦略はありますか？ 例えば、移動速度の低下を除去する時に、現在ではサーバーが GameplayEffect の除去を複製してプレイヤーのキャラクターの位置をスナップするのを待つ必要があります。
+4. GameplayPrediction.h にあるように、 GameplayEffects の除去を predict （予測）することができませんが、 GameplayEffects の除去におけるレイテンシーの影響を軽減する戦略はありますか？  
+   例えば、移動速度の低下を除去する時に、現在ではサーバーが GameplayEffect の除去を複製してプレイヤーのキャラクターの位置をスナップするのを待つ必要があります。
 
 > これは難しい問題で、良い答えはありません。
 > 私達は一般的に、許容範囲とスムージングでこの問題を回避してきました。
@@ -3578,7 +3582,13 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 > しかし、同じオーナーのもとに複数の ASC が存在するのは厄介なことになるかもしれません。
 
 
-7. locally predicted （ローカル予測）されたアビリティのクールダウン期間を、サーバーが Owning Client （所有クライアント）に上書きしないようにする方法はありますか？ 遅延が大きいシナリオでは、ローカルのクールダウン期間が終了したが、サーバー上ではまだクールダウン期間中である場合に、 Owning Client （所有クライアント）が能力の有効化を再度「試みる」ことになります。 Owning Client （所有クライアント）の有効化の要求がネットワーク経由でサーバーに到達する頃には、サーバーはクールダウンを解除しているか、サーバーは残りのミリ秒の間、有効化の要求をキューに入れることができるかもしれません。 さもなければ、レイテンシーの高いクライアントは、レイテンシーの低いクライアントに比べて、アビリティを再起動するまでの時間が長くなります。 これは、クールダウンが 1 秒以下のベーシックアタックのように、クールダウンが非常に短いアビリティで顕著に現れます。 サーバーが locally predicted （ローカル予測）されるアビリティのクールダウン時間を上書きしないようにする方法がないとしたら、アビリティの再活性化に対する高いレイテンシーの影響を緩和するための Epic の戦略は何でしょうか？ 別の例に基づいた言い方をすると、 Paragon のベーシックアタックやその他のアビリティは、高いレイテンシーのプレイヤーが、 local prediction （ローカル予測）された低いレイテンシーのプレイヤーと同じ速度で攻撃や起動ができるように、 Epic はどのように設計したのでしょうか？
+7. locally predicted （ローカル予測）されたアビリティのクールダウン期間を、サーバーが Owning Client （所有クライアント）に上書きしないようにする方法はありますか？  
+   遅延が大きいシナリオでは、ローカルのクールダウン期間が終了したが、サーバー上ではまだクールダウン期間中である場合に、 Owning Client （所有クライアント）が能力の有効化を再度「試みる」ことになります。  
+   Owning Client （所有クライアント）の有効化の要求がネットワーク経由でサーバーに到達する頃には、サーバーはクールダウンを解除しているか、サーバーは残りのミリ秒の間、有効化の要求をキューに入れることができるかもしれません。  
+   さもなければ、レイテンシーの高いクライアントは、レイテンシーの低いクライアントに比べて、アビリティを再起動するまでの時間が長くなります。  
+   これは、クールダウンが 1 秒以下のベーシックアタックのように、クールダウンが非常に短いアビリティで顕著に現れます。  
+   サーバーが locally predicted （ローカル予測）されるアビリティのクールダウン時間を上書きしないようにする方法がないとしたら、アビリティの再活性化に対する高いレイテンシーの影響を緩和するための Epic の戦略は何でしょうか？  
+   別の例に基づいた言い方をすると、 Paragon のベーシックアタックやその他のアビリティは、高いレイテンシーのプレイヤーが、 local prediction （ローカル予測）された低いレイテンシーのプレイヤーと同じ速度で攻撃や起動ができるように、 Epic はどのように設計したのでしょうか？
 
 > 簡潔に答えると、これを防ぐ方法はなく、 Paragon にはこの問題がありました。高いレイテンシーの接続では、ベーシックアタックの ROF （rate of fire 、銃器の連射速度）が低くなります。
 > 
@@ -3627,10 +3637,10 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 > * GameplayCues をアビリティシステムと連動しない別のモジュールに移したいと思います。  
 >   ここは改善すべき点がたくさんあると思います。
 
-これは私の個人的な意見であり、誰かに約束されたものではありません。
-最も現実的な方法は、新しいエンジン技術の構想が出た時に、アビリティシステムを更新する必要があり、その時にこのようなことをするのではないかと考えています。
-このような取り組みは、スクリプト、ネットワーク、物理/キャラクターの移動などに関連するものです。
-しかし、これは非常に先のことなので、タイムラインの確約や見積もりはできません。
+> これは私の個人的な意見であり、誰かに約束されたものではありません。
+> 最も現実的な方法は、新しいエンジン技術の構想が出た時に、アビリティシステムを更新する必要があり、その時にこのようなことをするのではないかと考えています。
+> このような取り組みは、スクリプト、ネットワーク、物理/キャラクターの移動などに関連するものです。
+> しかし、これは非常に先のことなので、タイムラインの確約や見積もりはできません。
 
 
 **[⬆ Back to Top](#table-of-contents)**
@@ -3638,120 +3648,138 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 <a name="resources-daveratti-community2"></a>
 
 #### 11.1.2 Community Questions 2
+
 Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 
-1. Is the support for decoupled fixed ticking planned ? I'd like to
-have Game Thread be fixed (like 30/60fps) and let the rendering thread
-run wild. I ask if this is something we should expect in future or
-not, to make some assumptions about how gameplay should work.
-I ask mainly because there is now a fixed async tick for physics and
-this poses a question how the rest of the system might work in the
-future. I do not hide that having the ability to have fixed tick game
-thread without also fixing tick rate of the rest of the engine would
-be beyond awesome.
+1. 固定ティックからの分離のサポートは計画されていますか？  
+   私は、ゲームスレッドは固定 (30/60fps など) にして、レンダリングスレッドをワイルドに走らせたいです。  
+   これは将来的に期待すべきことなのか、そうではないのか、ゲームプレイがどのように機能すべきかについて、いくつかの仮定を置いて尋ねています。  
+   私がこの質問をした主な理由は、現在、物理演算のための固定された非同期ティックがあり、これはシステムの残りの部分が将来どのように動作するかという疑問を提起するものです。  
+   私は、エンジンの他の部分のティックレートを修正すること無く、固定ティックのゲームスレッドを持つアビリティを持つことは、素晴らしいことであることを隠しません。
 
-> There are no plans to decouple rendering frame rate and game thread tick frame rate. I think the ship has sailed on this ever happening due to the complexity of these systems and the requirement to preserve backwards compatibility with previous engine versions.
+> レンダリングフレームレートとゲームスレッドティックフレームレートを分離する計画はありません。
+> これらのシステムの複雑さと、以前のエンジンバージョンとの後方互換性を維持する必要があるため、これが実現する可能性は低いと思います。
+> 
+> その代わりに、非同期の「 Physics Thread 」を用意するという方向性になりました。このスレッドは、ゲームスレッドとは独立して、一定のティックレートで動作します。
+> 固定レートで動作させる必要があるものはここで動作させ、ゲームスレッド/レンダリングはこれまで通りに動作させることができます。
+> 
+> Network Prediction は Independent Ticking と Fixed Ticking と呼ばれるモードをサポートしていることを明確にしておきます。
+> 私の長期的な計画は、 Independent Ticking を現在の Network Prediction の状態に近づけることです。このモードではゲームスレッド上で可変フレームレートで実行され、「 group/world 」 prediction （予測）が行われません。それは、「クライアントが自分のポーンと所有アクターを predict （予測）する」という古典的なモデルに過ぎません。
+> そして Fixed Ticking は非同期の physics のものを使用し、物理オブジェクトや他のクライアント/ポーン/車両/その他など、クライアントがコントロール/所有していないアクターを predict （予測）することができます。
+
+
+2. Network Prediction の統合がアビリティシステムとどの様になるか、計画はありますか？  
+   例えば固定フレームでのアビリティの起動（ prediction keys （予測キー）ではなく、能力が発動したフレームやタスクが実行されたフレームをサーバーが取得する）など？
+
+> はい、計画ではアビリティシステムの prediction keys （予測キー）を書き換え/削除し、Network Prediction の構造に置き換えることになっています。
+> NetworkPredictionExtras にある MockAbility の例は、これがどのように機能するかを示していますが、 GAS が必要とするものよりも「ハードコード」されています。
+> 
+> 主なアイデアは、 ASC の RPC において、クライアント -> サーバーで行われる明示的な Prediction Key （予測キー）の交換を削除することです。
+> prediction （予測）ウィンドウや スコープ付き prediction keys （予測キー）はもはや存在しません。
+> 代わりに、全てが NetworkPrediction フレームに固定されます。
+> 重要なのは、クライアントとサーバーが、いつ物事が起きるかについて合意することです。
+> 例を上げると：
+> * いつアビリティの発動/終了/キャンセルされたのか
+> * いつ GameplayEffect が適用/解除されたのか
+> * アトリビュートの値（フレーム X におけるアトリビュートの値は何か）
+> 
+> これらはアビリティシステムレベルに一般的に行うことができると思います。
+> しかし、実際に UGameplayAbility 内のユーザー定義のロジックを完全にロールバック可能にするにはさらに多くの作業が必要です。
+> 最終的には UGameplayAbility のサブクラスとして、完全にロールバック可能で、より限定された機能セット、またはロールバックに適しているとマークされたアビリティタスクのみにアクセスできるようにしたりすることになるかもしれません。
+> そんなところでしょうか。
+> また、アニメーションイベントやルートモーション、それらの処理方法にも多くの影響があります。
+> 
+> もっと明確な答えを出したかったのですが、 GAS に再び触れる前に、基礎をしっかりと固めるとこがとても重要です。
+> 上位のシステムを変更する前に、 Movement と physics がしっかりしていなければなりません。
+
+
+3. Network Prediction の開発をメインブランチに移行する予定はありますか？  
+   正直に言うと、最新のコードのチェックをしたいです。  
+   どんな状態であっても。
+
+> それに向けて取り組んでいます。
+> システム面での作業は、 NetworkPrediction （ NetworkPhysics.h を参照）で行われていますし、基礎となる非同期のフィジックスはすべて利用できるようになっています（ RewindData.h など）。
+> また、 Fortnite のユースケースにも注力していますが、これは明らかに公開できません。
+> バグやパフォーマンスの最適化などにも取り組んでいます。
+> 
+> 詳細はこちら：
+> このシステムの初期バージョンに取り組んでいたときは、我々は「フロントエンド」に非常に重点を置いていました - 状態やシミュレーションをどのように定義し記述するかという。
+> 我々はそこで多くのことを学びました。
+> しかし、非同期のフィジックスが稼働するようになってからは、我々はこのシステムで実際に動作するものを作ることに重点を置きました。代償として、初期の抽象的な概念を捨ててでも。
+> ここでの目標は実際に動くようになったら、また戻ってきて、物事を再結合することです。
+> 例えば、「フロントエンド」に戻って、今取り組んでいる技術の中核部分の上に、その最終バージョンを作ることです。
+
+
+4. Main では、しばらくの間、 Gameplay Messages を送信するためのプラグイン（Event/Message Bus のようなもの）がありましたが、削除されてしまいました。  
+   復活させる予定はありますか？  
+   Game Features/Modular Gameplay プラグインでは、汎用の Event Bus Dispatcher があると非常に便利です。
+
+> GameplayMessages プラグインのことを言っているのだと思います。
+> これはおそらく、いつかは戻ってくるでしょう - API がまだ完成しておらず、作者もまだ公開するつもりはなかったようです。
+> Modular Gameplay デザインに有用であることには同意します。
+> しかし、これは私の分野ではないので、これ以上の情報はありません。
+
+
+5. 最近、非同期固定（フレームレート）フィジックスで遊んでいて、その結果は期待できるものでしたが、もし将来的に NP のアップデートがあるのであれば、私はただ遊んで待つだけになるでしょう、なぜなら、これを動作させるためにはエンジン全体を固定ティックにする必要があり、一方で私はフィジックスを 33 ms に保つようにしているからです。  
+   すべてが 30 fps では良い体験にはなりません (: 。
+   非同期の CharacterMovementComponent の作業が行われていることは知っていましたが、これが Network Prediction を使用するのか、それとも別の作業なのかはわかりません。
+   これに気づいてから、私は先に進み、固定ティックレートでカスタムの非同期動作を実験しようとし、これは問題なく動作しましたが、それに加えて補間のために別のアップデートを追加する必要がありました。
+   設定としては、別のワーカースレッドでシミュレーションティックを固定の 33 ms で更新を実行し、計算を行い、結果を保存し、ゲームスレッドでゲームスレッドで現在のフレームレートに合わせて補間するというものでした。
+   完璧ではありませんでしたが、これで仕事は完了しました。
+   私の質問は、これが将来的に簡単に設定できるものであるのかということで、というのも、（補間の部分で）かなりの量の定型的なコードを書く必要があり、それは、動いているオブジェクトを個別に補間するのに、特に効率的ではないからです。
+   非同期処理は非常に興味深いもので、固定のアップデートレートでゲームシミュレーションを実行できるようになり（固定スレッドが不要になります）、より predictable （予測可能）な結果が得られるようになります。
+   これは将来的に意図されたものなのでしょうか、それとも一部のシステムにとっての利点なのでしょうか？
+   私の記憶にある限り、アクターのトランスフォームは非同期に更新されず、ブループリントは完全にスレッドセーフではありません。
+   言い換えると、これはフレームワークレベルでサポートされる予定のものなのでしょうか、それともかくゲームが独自に解決しなければならないものなのでしょうか？
+
+> > 非同期の CharacterMovementComponent
 >
-> Instead, the direction we've gone is to have an asynchronous "Physics Thread" which runs at a fixed tick rate, independent of the game thread. Things that need to run at a fixed rate can run here and the game thread / rendering can operate how they always have.
->
-> It's worth clarifying that Network Prediction supports what it calls Independent Ticking and Fixed Ticking modes. My long term plan is to keep Independent Ticking roughly how it is today in Network Prediction where it runs on the game thread at variable frame rate and there is no "group/world" prediction, it's just the classic "clients predict their own pawn and owned actors" model. And Fixed Ticking would be what uses the async physics stuff and allows you to predict non client controlled/owned actors like physics objects and other clients/pawns/vehicles/etc.
-
-
-2. Is there any plan on how the integration of Network Prediction will
-look with the Ability System ? Like for example, fixed frame ability
-activation (so the server gets frames in which abilities were
-activated and tasks executed instead of prediction keys) ?
-
-> Yes, the plan is to rewrite/remove the Ability System's prediction keys and replace them with Network Prediction constructs. The MockAbility examples in NetworkPredictionExtras show how this might work but they are more "hard coded" than what GAS will require. 
->
-> The main idea would be that we remove the explicit client->server Prediction Key exchange in the ASC's RPCs. There would no longer be prediction windows or scoped prediction keys. Instead everything would be anchored around NetworkPrediction frames. The important thing is that client and server agree on when things happen. Examples would be:
->
-> * When abilities were activated/ended/cancelled
-> * When Gameplay Effects were applied/removed
-> * Attribute values (what an attributes value was at frame X)
->
-> I think this could be done generically at the ability system level. But actually making the user-defined logic inside a UGameplayAbility completely rollback-able would still take more work. We may end up having a subclass of UGameplayAbility that is fully rollbackable and has access to a more limited set of functionality or only Ability Tasks that are marked as rollback-friendly. Something like that. There are also many implications to animation events and root motion and how those are processed.
->
-> Wish I had a more clear answer but it's really important we get the foundation right before touching GAS again. Movement and physics have to be solid before the higher level systems can be changed.
-
-
-3. Is there a plan to move Network Prediction development toward the
-main branch ? Not gonna lie, I'd really like to check the latest code.
-Regardless of it's state.
-
-> We are working towards it. The system work is still all being done in NetworkPrediction (see NetworkPhysics.h) and the underlying async physics stuff should be all available (RewindData.h etc). But we also have use cases in Fortnite that we have been focused on that obviously can't be made public. We are working through bugs, performance optimizations, etc.
->
-> For more context: when working on the early versions of this system, we were very focused on the "front end" of things - how state and simulations were defined and written. We learned a lot there. But as the async physics stuff has come online, we've been much more focused on just getting something real to work in this system, at the expense of throwing out some of our early abstractions. The goal here is to circle back when the real thing is working and reunifying things. E.g, get back to the "front end" and make the final version of that on top of the core pieces of tech we are working on now.
-
-
-4. For some time on Main there was a plugin for sending Gameplay
-Messages (Looked like Event/Message Bus), but it was removed. Any
-plans to restore it ? With the Game Features/Modular Gameplay plugins,
-having a generic Event Bus Dispatcher would be extremely useful.
-
-> I think you are referring to the GameplayMessages plugin. This will probably come back at some point - the API isn't really finalized yet and the author didn't mean for it to be public yet. I agree it should be useful for modular gameplay design. But it's not really my area so I don't have much more information. 
-
-
-5. I've been playing recently with async fixed physics and the results
-are promising, though if there is going to be NP update in the future
-I will probably just play around and wait, since to get it working I
-still need to get entire engine into fixed tick and on the other hand
-I try to keep physics at 33ms. Which does not make for a good
-experience if everything is at 30 fps (:.
-
-I have noticed there was some work on Async
-CharacterMovementComponent, but not sure if this will be using Network
-Prediction, or it is a separate effort ?
-
-Since I noticed it, I also went ahead and tried to implement my custom
-async movement at fixed tick rate, which worked okay, but on top of it
-I also needed to add a separate update for interpolation. The setup
-was to run simulation tick on separate worker threads at fixed 33ms
-update, do calculations, save result, and interpolate it at the game
-thread to match current frame rate. Not perfect, but it got the job
-done.
-
-My question is, if this is something that might be easier to set up in
-the future, as there is just quite a bit of boilerplate code to write,
-(the interpolation part) and it's not particularly efficient to
-interpolate each moving object individually.
-
-The async stuff is really interesting, because it would allow you to
-really run game simulation at fixed update rate (which would make
-fixed thread unneeded) and have more predictable results. Is this
-something that is intended going forward, or more of a benefit to
-select systems ? As far as I remember actor transforms are not updated
-async and blueprints are not entirely thread safe. In other words is
-it something that is planned to be supported at more of a framework
-level or something that each game has to solve on it's own ?
-
-> Async CharacterMovementComponent
->
-> This is basically an early prototype/experiment of porting CMC as it is to the physics thread. I don't view it as the future of CMC yet, but it could evolve into that. Right now there is no networking support so it's not something I would really follow. The people doing it are mostly concerned with measuring input latency that this system would add and how that could be mitigated.
->
-> I still need to get entire engine into fixed tick and on the other hand I try to keep physics at 33ms. Which does not make for a good experience if everything is at 30 fps (:.
->
-> The async stuff is really interesting, because it would allow you to really run game simulation at fixed update rate (which would make fixed thread unneeded) 
->
-> Yes. The goal here is that with async physics enabled, you can run the engine at variable tick rate while the physics and "core" gameplay simulations can run at the fixed rate (such as character movement, vehicles, GAS, etc).
->
-> These are the cvars that need to be set to enable this now: (I think you've figured this out)  
+> これは基本的に CMC (CharacterMovementComponent) をそのまま物理スレッドに移植するための初期のプロトタイプ/実験です。
+> 私はこれを CMC (CharacterMovementComponent) の将来像とは考えていませんが、将来的にはそのように進化する可能性があります。
+> 今のところ、ネットワークのサポートはありませんので、私が実際にフォローするようなものではありません。
+> このシステムを開発している人たちは、このシステムによって追加される入力のレイテンシーを測定し、それをどのように軽減するかに関心を持っています。
+> 
+> > 一方で私はフィジックスを 33 ms に保つようにしているからです。  
+> > すべてが 30 fps では良い体験にはなりません (: 。
+> 
+> > 非同期処理は非常に興味深いもので、固定のアップデートレートでゲームシミュレーションを実行できるようになり（固定スレッドが不要になります）
+> 
+> はい。ここでの目的は、非同期フィジックスを有効にすることで、エンジンを可変ティックレートで動作させながら、フィジックスや「コア」なゲームプレイのシミュレーション（キャラクターの移動、車両、 GAS 、等）を固定レートで動作させることです。
+> 
+> 現在、これを有効にするためには、これらの cvars を設定する必要があります：（もうお分かりだと思いますが）
 > `p.DefaultAsyncDt=0.03333`  
 > `p.RewindCaptureNumFrames=64`
->
-> Chaos does provide interpolation for the physics state (E.g, the transforms that get pushed back to the UPrimitiveComponent and are visible to the game code). There is a cvar now, `p.AsyncInterpolationMultiplier`, which controls that if you want to look at it. You should see smooth continuous motion of physics bodies without having to write any extra code. 
->
-> If you want to interpolate non physics state, it is still up to you to do that right now. The example would be like a cool-down that you want to update (tick) on the async physics thread but see smooth continuous interpolation on the game thread so that every render frame the cool down visualization is updated. We will get to this eventually but don't have examples yet.
->
-> there is just quite a bit of boilerplate code to write,
->
-> Yeah, so that has been a big general problem with the system up until now. We want to provide an interface that experienced programmers can use to maximize performance and safety (the ability to write gameplay code that "just works" predictively without tons of hazards and things you could-do-but-better-not). So something like CharacterMoverment might do a bunch of custom stuff to maximize its performance - e.g, writing templated code and doing batch updating, going wide, breaking the update loop into distinct phases etc. We want to provide a good "low level" interface into the async thread and rollback systems for this use case. And in this case too - it's still reasonable that the character movement system itself is extendable in its own way. For example providing a way to blueprint a custom movement mode and providing a blueprint API that is thread safe.
->
-> But we recognize this is not acceptable for simpler gameplay objects that don't really need their own "system". Something more inline with Unreal is what is needed. E.g, using the reflection system, having general blueprint support, etc. There are examples of blueprints being used on other threads (see BlueprintThreadSafe keyword and what the animation system has been working towards). So I think there will be some form of this one day. But again, we aren't there yet.
->
-> I realize you were just asking about interpolation but that is the general answer: right now we have you do everything manually like NetSerialize, ShouldReconcile, Interpolate, etc but eventually we'll have a way that is like "if you want to just use the reflection system, you don't have to manually write this stuff". We just don't want to *force* everyone to use the reflection system since that imposes other limitations that we think we don't want to take on the lowest levels of the system. 
->
-> And then just to tie this back to what I said earlier - right now we are really focused on getting a few very specific examples working and performant and then we will turn attention back to the front end and making things friendly to use and iterate on, reducing boilerplate, etc for everybody else to use. 
+> 
+> Chaos は物理状態の補間を行います（例えば UPrimitiveComponent にプッシュバックされ、ゲームコードから見えるようになるトランスフォーム）。
+> 現在、 `p.AsyncInterpolationMultiplier` という cvar があり、それを見たい場合はコントロールすることができます。
+> 余分なコードを書かなくても、フィジックスボディのスムーズな連続した動きが見られるはずです。
+> 
+> 物理状態以外を補間したい場合は、今のところ、その方法に依存しています。
+> 例としては、クールダウンを非同期のフィジックススレッドで更新（ティック）したいが、ゲームスレッドではスムーズな連続保管を行い、レンダリングフレームごとにクールダウンのビジュアルが更新されるようにしたい、といったところでしょうか。
+> これはいずれ実現する予定ですが、まだ前例はありません。
+> 
+> > かなりの量の定型的なコードを書く必要があり
+> 
+> そうですね、これまでのシステムでは、この点が大きな問題となっていました。
+> 我々は、経験豊富なプログラマーが、パフォーマンスと安全性を最大限に高めるために使用できるインターフェイスを提供したいと考えています（ゲームプレイのコードが予想通りに「ただ動く」ように書くことができ、大量のハザードや「できるけどできない」ことがないように）。
+> つまり、 CharacterMoverment のようなものは、パフォーマンスを最大化するために多くのカスタム処理を行うことができます。 - 例えば、テンプレート化されたコードを書いてバッチ更新を行う、ワイド化する、更新ループを個別のフェーズに分割するなどです。
+> このような場合のために、非同期スレッドやロールバックシステムへの優れた「低レベル」のインターフェイスを提供したいと考えています。
+> また、今回のケースでは、 CharacterMovementSystem 自体が独自の方法で拡張可能であることが合理的です。
+> 例えば、カスタムの移動モードをブループリントする方法を提供したり、スレッドセーフなブループリント API を提供したりします。
+> 
+> しかし、独自の「システム」を必要としない、よりシンプルなゲームプレイオブジェクト、これは受け入れられないと認識しています。
+> もっと Unreal に沿ったものが必要とされています。
+> 例えば、リフレクションシステムの使用や、一般的なブループリントのサポート、等です。
+> ブループリントが他のスレッドで使用されている例があります（ BlueprintThreadSafe キーワードおよびアニメーションシステムが目指しているものを参照）。
+> ですから、いつかは何らかの形で実現されると思います。
+> しかし、繰り返しになりますが、まだそこには至っていません。
+> 
+> 補間についての質問だったようですが、これが一般的な答えです：
+> 今は、 NetSerialize 、 ShouldReconcile 、 Interpolate 、など、全てを手動で行ってもらっていますが、いずれは「リフレクションシステムを使いたいなら、このようなものを手動で書く必要はありません」というような方法を用意する予定です。
+> ただ、全員にリフレクションシステムを使うことを **強制** したくはありません、なぜなら、それによってシステムの最低レベルでは取りたくない別の制限が課せられるからです。
+> 
+> そして、先程の話と結びつけて考えてみます - 今は、いくつかの具体的な例を動かしてパフォーマンスを改善させることに集中しており、その後は、フロントエンドに目を向けて、使いやすく、くり返し使えるようにしたり、定型文を減らしたりして、みんなが使えるようにしていきます。
+
 
 **[⬆ Back to Top](#table-of-contents)**
 
