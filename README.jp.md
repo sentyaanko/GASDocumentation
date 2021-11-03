@@ -612,7 +612,7 @@ virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
 さらに、 `Actor` がどの `Attributes` を持つかを選択的に選ぶ別の手段として `AttributeSets` をサブクラス化できます。 `Attributes` は内部的に `AttributeSetClassName.AttributeName` として参照されます。 `AttributeSet` をサブクラス化する時、親クラスのすべての `Attributes` は親クラス名が接頭辞に残ります。
 
-１つ以上の `AttributeSet` を所持できますが、１つ以上の `AttributeSet` を同じクラスの `ASC` に持つべきではありません。 もし同一クラスが１つ以上の `AttributeSet` を持つ場合、どの `AttributeSet` を使うべきかわからなくなり、１つだけ選ばれます。
+１つ以上の `AttributeSet` を所持できますが、１つ以上の同じクラスの `AttributeSet` を `ASC` に持つべきではありません。 もし同一クラスが１つ以上の `AttributeSet` を持つ場合、どの `AttributeSet` を使うべきかわからなくなり、１つだけ選ばれます。
 
 <a name="concepts-as-design-subcomponents"></a>
 
@@ -2870,7 +2870,7 @@ Prediction （予測）キーは、アクティベーション prediction （予
 
 クライアントで predictively （予測）的に `Actors` をスポーンすることは高度なトピックです。 GAS はこれをそのまま処理する機能を提供していません（ `SpawnActor` `AbilityTask` はサーバー上で `Actor` をスポーンさせるだけです）。 鍵となる発想はクライアントとサーバーの両方でレプリケーションされた `Actor` をスポーンさせることです。
 
-もし `Actor` が 装飾用もしくはなんのゲームプレイ用途も提供しないならば、単純な解決方法は `Actor` の `IsNetRelevantFor()` 関数をオーバーライドし、サーバーが、 Owning Client （所有クライアント）にレプリケーションするのを制限することです。  Owning Client （所有クライアント）トはローカルでスポーンしたバージョンをもつことになり、サーバーと他のクライアントはサーバーのレプリケーションバージョンを持つことになります。
+もし `Actor` が 装飾用もしくはなんのゲームプレイ用途も提供しないならば、単純な解決方法は `Actor` の `IsNetRelevantFor()` 関数をオーバーライドし、サーバーが、 Owning Client （所有クライアント）にレプリケーションするのを制限することです。  Owning Client （所有クライアント）はローカルでスポーンしたバージョンをもつことになり、サーバーと他のクライアントはサーバーのレプリケーションバージョンを持つことになります。
 
 ```c++
 bool APAReplicatedActorExceptOwner::IsNetRelevantFor(const AActor * RealViewer, const AActor * ViewTarget, const FVector & SrcLocation) const
@@ -2929,7 +2929,7 @@ Epic は近頃、`CharacterMovementComponent` を新しい `Network Prediction` 
 
 `TargetActors` は `AActor` に基づいており、ターゲットとする **場所** と **方法** を示すために、あらゆる種類の可視コンポーネントを持つことができます（スタティックメッシュやデカールのような）。 スタティックメッシュは、キャラクターが構築するオブジェクトの配置の視覚化に使用することができます。 デカールは地面に影響を与える範囲を示すために使用することができます。 サンプルプロジェクトでは、 [`AGameplayAbilityTargetActor_GroundTrace`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/AGameplayAbilityTargetActor_Grou-/index.html) を地面のデカールとして使用することで、メテオアビリティのダメージの影響を与える範囲を示しています。 また、何も表示しなくても構いません。 たとえば、 [GASShooter](https://github.com/tranek/GASShooter) で使用されている、（即時にターゲットまでの直線をトレースする）ヒットスキャンガンには何かを表示することに意味がありません。
 
-これらは、「基本のトレースまたはオーバーラップを使いターゲットの情報をキャプチャ」し、「 `TargetActor` の実装に基づいて、結果を `FHitResults` または `AActor` の配列として `TargetData` に変換」します。 `WaitTargetData` `AbilityTask` は、ターゲットが `TEnumAsByte<EGameplayTargetingConfirmation::Type> ConfirmationType` パラメータを通じて、いつ確認されるかを決定します。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` を使用 **しない** 場合、 `TargetActor` は通常、トレースとオーバーアラップを `Tick()` で行い、実装に従い `FHitResult` の座標を更新します。 トレースとオーバーアラップを `Tick()` で行いますが、レプリケーションされておらず、一般的には１つ以上（もっとあってもよいのですが）の `TargetActor` が一度に実行することはないので、通常はひどいことにはなりません。 それが `Tick()` を使用しており、複雑な `TargetActors` ではそこで多くのこと（たとえばGASShooter における ロケットランチャーのセカンダリーアビリティ）を行う可能性があることを、承知しておいてください。 `Tick()` でトレースするとクライアントの応答性が非常に良いですが、パフォーマンスヒットが大きすぎる場合は、 `TargetActor` tick の頻度を下げることを検討すべきです。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` のケースでは、 `TargetActor` はすぐにスポーンされ、 `TargetData` を生成し、破棄します。 `Tick()` は呼び出されません。
+これらは、「基本のトレースまたはオーバーラップを使いターゲットの情報をキャプチャ」し、「 `TargetActor` の実装に基づいて、結果を `FHitResults` または `AActor` の配列として `TargetData` に変換」します。 `WaitTargetData` `AbilityTask` は、ターゲットが `TEnumAsByte<EGameplayTargetingConfirmation::Type> ConfirmationType` パラメータを通じて、いつ確認されるかを決定します。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` を使用 **しない** 場合、 `TargetActor` は通常、トレースとオーバーラップを `Tick()` で行い、実装に従い `FHitResult` の座標を更新します。 トレースとオーバーラップを `Tick()` で行いますが、レプリケーションされておらず、一般的には１つ以上（もっとあってもよいのですが）の `TargetActor` が一度に実行することはないので、通常はひどいことにはなりません。 それが `Tick()` を使用しており、複雑な `TargetActors` ではそこで多くのこと（たとえばGASShooter における ロケットランチャーのセカンダリーアビリティ）を行う可能性があることを、承知しておいてください。 `Tick()` でトレースするとクライアントの応答性が非常に良いですが、パフォーマンスヒットが大きすぎる場合は、 `TargetActor` tick の頻度を下げることを検討すべきです。 `TEnumAsByte<EGameplayTargetingConfirmation::Type::Instant` のケースでは、 `TargetActor` はすぐにスポーンされ、 `TargetData` を生成し、破棄します。 `Tick()` は呼び出されません。
 
 | `EGameplayTargetingConfirmation::Type` | いつターゲットが確認されるか                                                                                                                                                                                                                                                                                                                                                   |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
