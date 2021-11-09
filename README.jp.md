@@ -4,7 +4,7 @@
 
 このドキュメントの目的は、 GAS の主要な概念とクラスを説明し、 GAS での私の経験に基づいていくつかの追加の解説を提供することです。 コミュニティのユーザーの間には GAS の「仲間内の智恵（tribal knowledge）」がたくさんあり、私はここでの私の全てを共有することを目指しています。
 
-サンプルプロジェクトとドキュメントは、 **Unreal Engine 4.26** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
+サンプルプロジェクトとドキュメントは、 **Unreal Engine 4.27** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
 
 [GASShooter](https://github.com/tranek/GASShooter) は、マルチプレイヤー FPS/TPS 向けの GAS を使用した高度なテクニックを示す姉妹サンプルプロジェクトです。
 
@@ -160,6 +160,7 @@
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.1 [Community Questions 1](#resources-daveratti-community1)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.2 [Community Questions 2](#resources-daveratti-community2)  
 > 1. [GAS Changelog](#changelog)  
+>    * [4.27](#changelog-4.27)  
 >    * [4.26](#changelog-4.26)  
 >    * [4.25.1](#changelog-4.25.1)  
 >    * [4.25](#changelog-4.25)  
@@ -268,7 +269,7 @@ GAS を使用するプロジェクトを設定するための基本的な手順 
 1. エディタで GameplayAbilitySystem プラグインを有効にする
 1. `YourProjectName.Build.cs` を編集し、`PrivateDependencyModuleNames` に `"GameplayAbilities", "GameplayTags", "GameplayTasks"` を追加する
 1. Visual Studio プロジェクトファイルを更新/再生成する
-1. 4.24 以降、 [`TargetData`](#concepts-targeting-data) を利用する為には `UAbilitySystemGlobals::InitGlobalData()` の呼び出しが必要になりました。 サンプルプロジェクトでは `UEngineSubsystem::Initialize()` で行っています。 詳しくは [`InitGlobalData()`](#concepts-asg-initglobaldata) を参照してください。
+1. 4.24 以降、 [`TargetData`](#concepts-targeting-data) を利用する為には `UAbilitySystemGlobals::Get().InitGlobalData()` の呼び出しが必要になりました。 サンプルプロジェクトでは `UAssetManager::StartInitialLoading()` で行っています。 詳しくは [`InitGlobalData()`](#concepts-asg-initglobaldata) を参照してください。
 
 GAS を有効にするために必要なことはこれだけです。ここからは `Character` または `PlayerState` に [`ASC`](#concepts-asc) と [`AttributeSet`](#concepts-as) を追加して、 [`GameplayAbilities`](#concepts-ga) と [`GameplayEffects`](#concepts-ge) を作り始めましょう！
 
@@ -1572,7 +1573,7 @@ FGameplayTagContainer CooldownTags;
 
 // GetCooldownTags() ポインタを返すのに使う一時的なコンテナ。
 // CooldownTags と Cooldown GE の cooldown タグの結合した結果となります。
-UPROPERTY()
+UPROPERTY(Transient)
 FGameplayTagContainer TempCooldownTags;
 ```
 
@@ -1582,6 +1583,9 @@ FGameplayTagContainer TempCooldownTags;
 const FGameplayTagContainer * UPGGameplayAbility::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	// MutableTags writes to the TempCooldownTags on the CDO so clear it in case the ability cooldown tags change (moved to a different slot)
+	// MutableTags は CDO の TempCooldownTags に書き込み、アビリティのクールダウンタグが変更された場合に備えてクリアする（別のスロットに移動させる）
+	MutableTags->Reset();
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
 	{
@@ -1624,7 +1628,7 @@ FGameplayTagContainer CooldownTags;
 
 // GetCooldownTags() ポインタを返すのに使う一時的なコンテナ。
 // CooldownTags と Cooldown GE の cooldown タグの結合した結果となります。
-UPROPERTY()
+UPROPERTY(Transient)
 FGameplayTagContainer TempCooldownTags;
 ```
 次に `UGameplayAbility::GetCooldownTags()` をオーバーライドし、 `Cooldown Tags` と既存の `Cooldown GE` タグの結合した結果を返します。
@@ -1633,6 +1637,9 @@ FGameplayTagContainer TempCooldownTags;
 const FGameplayTagContainer * UPGGameplayAbility::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	// MutableTags writes to the TempCooldownTags on the CDO so clear it in case the ability cooldown tags change (moved to a different slot)
+	// MutableTags は CDO の TempCooldownTags に書き込み、アビリティのクールダウンタグが変更された場合に備えてクリアする（別のスロットに移動させる）
+	MutableTags->Reset();
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
 	{
@@ -2398,7 +2405,7 @@ GASShooter はブループリントノードを公開し、（前述のローカ
 
 <a name="concepts-ga-netsecuritypolicy"></a>
 
-#### 4.6.15 Net Security Policy （ネットセキュリティポリシー）
+#### 4.6.16 Net Security Policy （ネットセキュリティポリシー）
 
 `GameplayAbility` の `NetSecurityPolicy` はアビリティの実行をネットワーク上のどこで行うべきかを決定します。 クライアントの「制限されたアビリティの実行の企て」からの保護を提供します。
 
@@ -2757,9 +2764,9 @@ AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
 
 #### 4.9.1 InitGlobalData()
 
-UE 4.24 から、 [`TargetData`](#concepts-targeting-data) を使用するためには、 `UAbilitySystemGlobals::InitGlobalData()` の呼び出しが必要になりました。 さもないと、 `ScriptStructCache` に関係したエラーを受け取り、クライアントはサーバーから切断されるでしょう。 この関数はプロジェクトで一度だけ呼び出される必要があります。 Fortnite では、 AssetManager クラスの 開始初期化読み込み関数で呼び出しており、 Paragon では `UEngine::Init()` で呼び出しています。 サンプルプロジェクトで示されているように、 `UEngineSubsystem::Initialize()` に配置するのが適切であることがわかりました。 `TargetData` の問題を回避するための、プロジェクトにコピーする必要があるこの定形コードを検討します。
+UE 4.24 から、 [`TargetData`](#concepts-targeting-data) を使用するためには、 `UAbilitySystemGlobals::Get().InitGlobalData()` の呼び出しが必要になりました。 さもないと、 `ScriptStructCache` に関係したエラーを受け取り、クライアントはサーバーから切断されるでしょう。 この関数はプロジェクトで一度だけ呼び出される必要があります。 Fortnite では、 `UAssetManager::StartInitialLoading()` で呼び出しており、 Paragon では `UEngine::Init()` で呼び出しています。 サンプルプロジェクトで示されているように、 `UAssetManager::StartInitialLoading()` に配置するのが適切であることがわかりました。 `TargetData` の問題を回避するための、プロジェクトにコピーする必要があるこの定形コードを検討します。
 
-もし `AbilitySystemGlobals` の `GlobalAttributeSetDefaultsTableNames` を使用している時にクラッシュが発生した場合、 Fortnite のように `UEngineSubsystem::Initialize()` の中の代わりに、 `AssetManager` の中、あるいは `GameInstance` の中で `UAbilitySystemGlobals::InitGlobalData()` を後で呼び出す必要があるかもしれません。 このクラッシュは、「 `Subsystems` が作成された順序」と、「 `GlobalAttributeDefaultsTables` が `UAbilitySystemGlobals::InitGlobalData()` でデリゲートにバインドするために `EditorSubsystem` が読み込まれていることを要求すること」が原因である可能性があります。
+もし `AbilitySystemGlobals` の `GlobalAttributeSetDefaultsTableNames` を使用している時にクラッシュが発生した場合、 Fortnite のように、 `AssetManager` の中、あるいは `GameInstance` の中で `UAbilitySystemGlobals::Get().InitGlobalData()` を後で呼び出す必要があるかもしれません。
 
 **[⬆ Back to Top](#table-of-contents)**
 
@@ -3789,6 +3796,30 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 
 これは「公式の Unreal Engine の更新変更ログ」と「私が遭遇したドキュメント化されていない変更」から集めた、 GAS の注目すべき変更（修正、変更、そして新しい機能）のリストです。 もしあなたがここに記載されていないなにかを見つけたならば、 issue を作成するか、プルリクエストを行ってください。
 
+<a name="changelog-4.27"></a>
+### 4.27
+* Crash Fix: Fixed a root motion source issue where a networked client could crash when an Actor finishes executing an ability that uses a constant force root motion task with a strength-over-time modifier.
+* Bug Fix: Fixed a regression in Editor loading time when using GameplayCues.
+* Bug Fix: GameplayEffectsContainer's `SetActiveGameplayEffectLevel` method will no longer dirty FastArray if setting the same EffectLevel.
+* Bug Fix: Fixed an edge case in GameplayEffect mixed replication mode where Actors not explicitly owned by the net connection but who utilize that connection from `GetNetConnection` will not received mixed replication updates.
+* Bug Fix: Fixed an endless recursion occuring in GameplayAbility's class method `EndAbility` which was called by calling `EndAbility` again from `K2_OnEndAbility`.
+* Bug Fix: GameplayTags Blueprint pins will no longer be silently cleared if they are loaded before tags are registered. They now work the same as GameplayTag variables, and the behavior for both can be changed with the ClearInvalidTags option in the Project Settings.
+* Bug Fix: Improved thread safety of GameplayTag operations.
+* New: Exposed SourceObject to GameplayAbility's `K2_CanActivateAbility` method.
+* New: Native GameplayTags. Introducing a new `FNativeGameplayTag`, these make it possible to do one off native tags that are correctly registered and unregistered when the module is loaded and unloaded.
+* New: Added new method `GrantAndActivateAbilityOnSelfWithParams` which allows Designers to pass in FGameplayEventData when granting and then activating an ability from Blueprint.
+* New: Improved ScalableFloats in the GameplayAbilities plugin to support dynamic lookup of curve tables from the new Data Registry System. Added a ScalableFloat header for easier reuse of the generic struct outside the abilities plugin.
+* New: Added code support for using the GameplayTag UI in other Editor customizations via GameplayTagsEditorModule.
+* New: Modified UGameplayAbility's PreActivate method to optionally take in trigger event data.
+* New: Added more support to filter GameplayTags in the Editor using a project-specific filter. `OnFilterGameplayTag` supplies the referencing property and the tag source, so you can filter tags based on what asset is requesting the tag.
+* New: Added option to preserve the original captured SourceTags when GameplayEffectSpec's class method `SetContext` is called after initialization.
+* New: Improved UI for registering GameplayTags from specific plugins. The new tag UI now lets you select a plugin location on disk for newly added GameplayTag sources.
+* New: A new track has been added to Sequencer to allow for triggering notify states on Actors built using the GameplayAbiltiySystem. Like notifies, the GameplayCueTrack can utilize range-based events or trigger-based events.
+* Change: Changed the GameplayCueInterface to pass GameplayCueParameters struct by reference.
+* Optimization: Made several performance improvements to loading and regenerating the GameplayTag table were implemented so that this option would be optimized.
+
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/](https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/
+
 <a name="changelog-4.26"></a>
 ### 4.26
 * GAS plugin is no longer flagged as beta.
@@ -3804,6 +3835,8 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 * New: Visual logger will now only collect and store info about instant GEs if we're currently recording visual logging data.
 * New: Added support for redirectors on gameplay attribute pins in blueprint nodes.
 * New: Added new functionality for when root motion movement related ability tasks end they will return the movement component's movement mode to the movement mode it was in before the task started.
+
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_26/
 
 <a name="changelog-4.25.1"></a>
 ### 4.25.1
@@ -3838,6 +3871,8 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 * API Change: AddDefaultSubobjectSet has been deprecated. AddAttributeSetSubobject should be used instead.
 * New: Gameplay Abilities can now specify the Anim Instance on which to play a montage.
 
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_25/
+
 <a name="changelog-4.24"></a>
 ### 4.24
 * Fixed blueprint node `Attribute` variables resetting to `None` on compile.
@@ -3852,28 +3887,7 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 * `APawn::PossessedBy()` now sets the owner of the `Pawn` to the new `Controller`. Useful because [Mixed Replication Mode](#concepts-asc-rm) expects the owner of the `Pawn` to be the `Controller` if the `ASC` lives on the `Pawn`.
 * Fixed bug with POD (Plain Old Data) in `FAttributeSetInitterDiscreteLevels`.
 
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_24/
+
 **[⬆ Back to Top](#table-of-contents)**
 
------
-
-<!--- 
-引き続きこのあたりから。
-
-SentyaAnko
-
-| 文型   | 訳                                           |
-| ------ | -------------------------------------------- |
-| sv     | s は v する                                  |
-| svc    | s は c である(ように v する)                 |
-| svo    | s は o を(に) v する                         |
-| svoo   | s は o1 に o2 を v する                      |
-| svoc   | s は o が c (な状態)であるように v する      |
-
-
-
---->
-
-
-<!--- working --->
-
------
