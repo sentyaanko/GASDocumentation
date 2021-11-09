@@ -3,7 +3,7 @@ My understanding of Unreal Engine 4's GameplayAbilitySystem plugin (GAS) with a 
 
 The goal of this documentation is to explain the major concepts and classes in GAS and provide some additional commentary based on my experience with it. There is a lot of 'tribal knowledge' of GAS among users in the community and I aim to share all of mine here.
 
-The Sample Project and documentation are current with **Unreal Engine 4.26**. There are branches of this documentation for older versions of Unreal Engine, but they are no longer supported and are liable to have bugs or out of date information.
+The Sample Project and documentation are current with **Unreal Engine 4.27**. There are branches of this documentation for older versions of Unreal Engine, but they are no longer supported and are liable to have bugs or out of date information.
 
 [GASShooter](https://github.com/tranek/GASShooter) is a sister Sample Project demonstrating advanced techniques with GAS for a multiplayer FPS/TPS.
 
@@ -158,6 +158,7 @@ The best documentation will always be the plugin source code.
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.1 [Community Questions 1](#resources-daveratti-community1)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.2 [Community Questions 2](#resources-daveratti-community2)  
 > 1. [GAS Changelog](#changelog)  
+>    * [4.27](#changelog-4.27)  
 >    * [4.26](#changelog-4.26)  
 >    * [4.25.1](#changelog-4.25.1)  
 >    * [4.25](#changelog-4.25)  
@@ -259,7 +260,7 @@ Basic steps to set up a project using GAS:
 1. Enable GameplayAbilitySystem plugin in the Editor
 1. Edit `YourProjectName.Build.cs` to add `"GameplayAbilities", "GameplayTags", "GameplayTasks"` to your `PrivateDependencyModuleNames`
 1. Refresh/Regenerate your Visual Studio project files
-1. Starting with 4.24, it is now mandatory to call `UAbilitySystemGlobals::InitGlobalData()` to use [`TargetData`](#concepts-targeting-data). The Sample Project does this in `UEngineSubsystem::Initialize()`. See [`InitGlobalData()`](#concepts-asg-initglobaldata) for more information.
+1. Starting with 4.24, it is now mandatory to call `UAbilitySystemGlobals::Get().InitGlobalData()` to use [`TargetData`](#concepts-targeting-data). The Sample Project does this in `UAssetManager::StartInitialLoading()`. See [`InitGlobalData()`](#concepts-asg-initglobaldata) for more information.
 
 That's all that you have to do to enable GAS. From here, add an [`ASC`](#concepts-asc) and [`AttributeSet`](#concepts-as) to your `Character` or `PlayerState` and start making [`GameplayAbilities`](#concepts-ga) and [`GameplayEffects`](#concepts-ge)!
 
@@ -1380,7 +1381,7 @@ FGameplayTagContainer CooldownTags;
 
 // Temp container that we will return the pointer to in GetCooldownTags().
 // This will be a union of our CooldownTags and the Cooldown GE's cooldown tags.
-UPROPERTY()
+UPROPERTY(Transient)
 FGameplayTagContainer TempCooldownTags;
 ```
 
@@ -1389,6 +1390,7 @@ Then override `UGameplayAbility::GetCooldownTags()` to return the union of our `
 const FGameplayTagContainer * UPGGameplayAbility::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset(); // MutableTags writes to the TempCooldownTags on the CDO so clear it in case the ability cooldown tags change (moved to a different slot)
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
 	{
@@ -1428,7 +1430,7 @@ FGameplayTagContainer CooldownTags;
 
 // Temp container that we will return the pointer to in GetCooldownTags().
 // This will be a union of our CooldownTags and the Cooldown GE's cooldown tags.
-UPROPERTY()
+UPROPERTY(Transient)
 FGameplayTagContainer TempCooldownTags;
 ```
 
@@ -1437,6 +1439,7 @@ Then override `UGameplayAbility::GetCooldownTags()` to return the union of our `
 const FGameplayTagContainer * UPGGameplayAbility::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset(); // MutableTags writes to the TempCooldownTags on the CDO so clear it in case the ability cooldown tags change (moved to a different slot)
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
 	{
@@ -2141,7 +2144,7 @@ GASShooter exposes a Blueprint node to allow batching abilities which the aforem
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-ga-netsecuritypolicy"></a>
-#### 4.6.15 Net Security Policy
+#### 4.6.16 Net Security Policy
 A `GameplayAbility`'s `NetSecurityPolicy` determines where should an ability execute on the network. It provides protection from clients attempting to execute restricted abilities.
 
 | `NetSecurityPolicy`     | Description                                                                                                                                        |
@@ -2464,9 +2467,9 @@ AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
 
 <a name="concepts-asg-initglobaldata"></a>
 #### 4.9.1 InitGlobalData()
-Starting in UE 4.24, it is now necessary to call `UAbilitySystemGlobals::InitGlobalData()` to use [`TargetData`](#concepts-targeting-data), otherwise you will get errors related to `ScriptStructCache` and clients will be disconnected from the server. This function only needs to be called once in a project. Fortnite calls it from the AssetManager class's start initial loading function and Paragon called it from `UEngine::Init()`. I find that putting it in `UEngineSubsystem::Initialize()` is a good place as shown in the Sample Project. I would consider this boilerplate code that you should copy into your project to avoid issues with `TargetData`.
+Starting in UE 4.24, it is now necessary to call `UAbilitySystemGlobals::Get().InitGlobalData()` to use [`TargetData`](#concepts-targeting-data), otherwise you will get errors related to `ScriptStructCache` and clients will be disconnected from the server. This function only needs to be called once in a project. Fortnite calls it from `UAssetManager::StartInitialLoading()` and Paragon called it from `UEngine::Init()`. I find that putting it in `UAssetManager::StartInitialLoading()` is a good place as shown in the Sample Project. I would consider this boilerplate code that you should copy into your project to avoid issues with `TargetData`.
 
-If you run into a crash while using the `AbilitySystemGlobals` `GlobalAttributeSetDefaultsTableNames`, you may need to call `UAbilitySystemGlobals::InitGlobalData()` later like Fortnite in the `AssetManager` or in the `GameInstance` instead of in `UEngineSubsystem::Initialize()`. This crash is likely due to the order in which the `Subsystems` are created and the `GlobalAttributeDefaultsTables` requires the `EditorSubsystem` to be loaded to bind a delegate in `UAbilitySystemGlobals::InitGlobalData()`.
+If you run into a crash while using the `AbilitySystemGlobals` `GlobalAttributeSetDefaultsTableNames`, you may need to call `UAbilitySystemGlobals::Get().InitGlobalData()` later like Fortnite in the `AssetManager` or in the `GameInstance`.
 
 **[⬆ Back to Top](#table-of-contents)**
 
@@ -3288,6 +3291,30 @@ level or something that each game has to solve on it's own ?
 
 This is a list of notable changes (fixes, changes, and new features) to GAS compiled from the official Unreal Engine upgrade changelog and from undocumented changes that I've encountered. If you've found something that isn't listed here, please make an issue or pull request.
 
+<a name="changelog-4.27"></a>
+### 4.27
+* Crash Fix: Fixed a root motion source issue where a networked client could crash when an Actor finishes executing an ability that uses a constant force root motion task with a strength-over-time modifier.
+* Bug Fix: Fixed a regression in Editor loading time when using GameplayCues.
+* Bug Fix: GameplayEffectsContainer's `SetActiveGameplayEffectLevel` method will no longer dirty FastArray if setting the same EffectLevel.
+* Bug Fix: Fixed an edge case in GameplayEffect mixed replication mode where Actors not explicitly owned by the net connection but who utilize that connection from `GetNetConnection` will not received mixed replication updates.
+* Bug Fix: Fixed an endless recursion occuring in GameplayAbility's class method `EndAbility` which was called by calling `EndAbility` again from `K2_OnEndAbility`.
+* Bug Fix: GameplayTags Blueprint pins will no longer be silently cleared if they are loaded before tags are registered. They now work the same as GameplayTag variables, and the behavior for both can be changed with the ClearInvalidTags option in the Project Settings.
+* Bug Fix: Improved thread safety of GameplayTag operations.
+* New: Exposed SourceObject to GameplayAbility's `K2_CanActivateAbility` method.
+* New: Native GameplayTags. Introducing a new `FNativeGameplayTag`, these make it possible to do one off native tags that are correctly registered and unregistered when the module is loaded and unloaded.
+* New: Added new method `GrantAndActivateAbilityOnSelfWithParams` which allows Designers to pass in FGameplayEventData when granting and then activating an ability from Blueprint.
+* New: Improved ScalableFloats in the GameplayAbilities plugin to support dynamic lookup of curve tables from the new Data Registry System. Added a ScalableFloat header for easier reuse of the generic struct outside the abilities plugin.
+* New: Added code support for using the GameplayTag UI in other Editor customizations via GameplayTagsEditorModule.
+* New: Modified UGameplayAbility's PreActivate method to optionally take in trigger event data.
+* New: Added more support to filter GameplayTags in the Editor using a project-specific filter. `OnFilterGameplayTag` supplies the referencing property and the tag source, so you can filter tags based on what asset is requesting the tag.
+* New: Added option to preserve the original captured SourceTags when GameplayEffectSpec's class method `SetContext` is called after initialization.
+* New: Improved UI for registering GameplayTags from specific plugins. The new tag UI now lets you select a plugin location on disk for newly added GameplayTag sources.
+* New: A new track has been added to Sequencer to allow for triggering notify states on Actors built using the GameplayAbiltiySystem. Like notifies, the GameplayCueTrack can utilize range-based events or trigger-based events.
+* Change: Changed the GameplayCueInterface to pass GameplayCueParameters struct by reference.
+* Optimization: Made several performance improvements to loading and regenerating the GameplayTag table were implemented so that this option would be optimized.
+
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/](https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/
+
 <a name="changelog-4.26"></a>
 ### 4.26
 * GAS plugin is no longer flagged as beta.
@@ -3303,6 +3330,8 @@ This is a list of notable changes (fixes, changes, and new features) to GAS comp
 * New: Visual logger will now only collect and store info about instant GEs if we're currently recording visual logging data.
 * New: Added support for redirectors on gameplay attribute pins in blueprint nodes.
 * New: Added new functionality for when root motion movement related ability tasks end they will return the movement component's movement mode to the movement mode it was in before the task started.
+
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_26/
 
 <a name="changelog-4.25.1"></a>
 ### 4.25.1
@@ -3337,6 +3366,8 @@ This is a list of notable changes (fixes, changes, and new features) to GAS comp
 * API Change: AddDefaultSubobjectSet has been deprecated. AddAttributeSetSubobject should be used instead.
 * New: Gameplay Abilities can now specify the Anim Instance on which to play a montage.
 
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_25/
+
 <a name="changelog-4.24"></a>
 ### 4.24
 * Fixed blueprint node `Attribute` variables resetting to `None` on compile.
@@ -3350,5 +3381,7 @@ This is a list of notable changes (fixes, changes, and new features) to GAS comp
 * Added restricted tag quality-of-life improvements. Removed the default option for restricted `GameplayTag` source. We no longer reset the source when adding restricted tags to make it easier to add several in a row. 
 * `APawn::PossessedBy()` now sets the owner of the `Pawn` to the new `Controller`. Useful because [Mixed Replication Mode](#concepts-asc-rm) expects the owner of the `Pawn` to be the `Controller` if the `ASC` lives on the `Pawn`.
 * Fixed bug with POD (Plain Old Data) in `FAttributeSetInitterDiscreteLevels`.
+
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_24/
 
 **[⬆ Back to Top](#table-of-contents)**
