@@ -2427,7 +2427,7 @@ GASShooter はブループリントノードを公開し、（前述のローカ
 
 ### 4.7.1 Ability Task の定義
 
-`GameplayAbilities` は１フレームでのみ実行されます。 これだけではあまりに柔軟性がありません。 「時間の経過とともに発生する」または「後のある時点で発火されたデリゲートからの応答が必要になる」アクションを実行するために、 `AbilityTasks` と呼ばれる潜伏的なアクションを使用します。
+`GameplayAbilities` は１フレームでのみ実行されます。 これだけではあまりに柔軟性がありません。 「時間の経過とともに発生する」または「後のある時点で発火されたデリゲートからの応答が必要になる」アクションを実行するために、 `AbilityTasks` と呼ばれる Latent アクションを使用します。
 
 GAS はすぐに利用できる多くの `AbilityTasks` が付属しています :
 * `RootMotionSource` を伴ったキャラクターの移動のためのタスク
@@ -2848,7 +2848,7 @@ GAS の prediction （予測）は、クライアントが `GameplayAbility` を
 * クライアントはサーバーから返された prediction （予測）キーを受け取ります。 これが `レプリケーションされた Prediction （予測）キー` です。 この prediction （予測）キーは今は古いとしてマークされています。
 * クライアントは今は失効したレプリケーションされた Prediction （予測）キーで作られた **すべての** `GameplayEffects` を削除します。 サーバーでレプリケーションされた `GameplayEffects` は存続します。 クライアントが追加し、サーバーから一致するレプリケーションされたバージョンを受信しなかったすべての `GameplayEffects` は mispredicted （予測ミス）です。
 
-Prediction （予測）キーは、アクティベーション prediction （予測）キーからの `Activation` で始まる、 `GameplayAbilities` の命令「 window 」のアトミックグループの間は、有効であることを保証します。 これは、１フレームの間だけ有効であると考えることができます。 潜伏的なアクションである `AbilityTasks` からのいかなるコールバックは `AbilityTask` に、新しい [スコープ付き Prediction （予測）ウィンドウ](#concepts-p-windows) を生成する組み込みの同期ポイントが無い限り、もはや有効な prediction （予測）キーを持ちません。
+Prediction （予測）キーは、アクティベーション prediction （予測）キーからの `Activation` で始まる、 `GameplayAbilities` の命令「 window 」のアトミックグループの間は、有効であることを保証します。 これは、１フレームの間だけ有効であると考えることができます。 Latent アクションである `AbilityTasks` からのいかなるコールバックは、 `AbilityTask` が新しい [スコープ付き Prediction （予測）ウィンドウ](#concepts-p-windows) を生成する組み込みの同期ポイントが無い限り、有効な prediction （予測）キーを持たなくなります。
 
 
 **[⬆ Back to Top](#table-of-contents)**
@@ -2857,7 +2857,7 @@ Prediction （予測）キーは、アクティベーション prediction （予
 
 #### 4.10.2 Creating New Prediction Windows in Abilities （Abilities における新しい予測ウィンドウの作成）
 
-`AbilityTasks` から呼び出されるコールバックでより多くのアクションを predict （予測）するには、新しい「スコープ付き Prediction （予測）キー」を使用して新しい「スコープ付き Prediction （予測）ウィンドウ」を作成する必要があります。 これはしばしばクライアントとサーバーの同期ポイントとも呼ばれます。 いくつかの `AbilityTasks` は（入力と関連付けられているすべてのものと同様に）、新しいスコープ付き Prediction （予測）ウィンドウを作成するための組み込み機能があります。つまり、 `AbilityTasks` のコールバックにあるアトミックコードには、使用する有効なスコープ付き Prediction （予測）キーがあります。 `WaitDelay` タスクのような他のタスクは、コールバック用の新しいスコープ付き Prediction （予測）ウィンドウを作成するための組み込みコードがありません。 もしアクションの predict （予測）が `WaitDelay` のように、新しいスコープ付き Prediction （予測）ウィンドウを作成するための組み込みコードを持っていない `AbilityTask` の後で必要ならば、 `WaitNetSync` `AbilityTask` を `OnlyServerWait` のオプションを指定して使用して、手動で行う必要があります。 クライアントが `OnlyServerWait` の `WaitNetSync` にヒットすると、 `GameplayAbility` の アクティベーション prediction （予測）キーに基づき新しいスコープ付き Prediction （予測）キーが生成され、サーバーに RPCs され、適用されるすべての新しい `GameplayEffects` に追加します。 サーバーが `OnlyServerWait` の `WaitNetSync` にヒットすると、続行する前に、クライアントから新しいスコープ付き Prediction （予測）キーを受信するまでするまで待機します。 このスコープ付き Prediction （予測）キーはアクティベーション prediction （予測）キーと同じ様に振る舞います - `GameplayEffects` に適用され、クライアントにレプリケーションされて失効したとマークされます。 このスコープ付き Prediction （予測）キーはスコープから外れるまで有効です。つまり、スコープ付き Prediction （予測）ウィンドウが閉じます。 繰り返しになりますが、（潜伏的なものがない）アトミック操作のみ新しいスコープ付き Prediction （予測）キーが使用できます。
+`AbilityTasks` から呼び出されるコールバックでより多くのアクションを predict （予測）するには、新しい「スコープ付き Prediction （予測）キー」を使用して新しい「スコープ付き Prediction （予測）ウィンドウ」を作成する必要があります。 これはしばしばクライアントとサーバーの同期ポイントとも呼ばれます。 いくつかの `AbilityTasks` は（入力と関連付けられているすべてのものと同様に）、新しいスコープ付き Prediction （予測）ウィンドウを作成するための組み込み機能があります。つまり、 `AbilityTasks` のコールバックにあるアトミックコードには、使用する有効なスコープ付き Prediction （予測）キーがあります。 `WaitDelay` タスクのような他のタスクは、コールバック用の新しいスコープ付き Prediction （予測）ウィンドウを作成するための組み込みコードがありません。 もしアクションの predict （予測）が `WaitDelay` のように、新しいスコープ付き Prediction （予測）ウィンドウを作成するための組み込みコードを持っていない `AbilityTask` の後で必要ならば、 `WaitNetSync` `AbilityTask` を `OnlyServerWait` のオプションを指定して使用して、手動で行う必要があります。 クライアントが `OnlyServerWait` の `WaitNetSync` にヒットすると、 `GameplayAbility` の アクティベーション prediction （予測）キーに基づき新しいスコープ付き Prediction （予測）キーが生成され、サーバーに RPCs され、適用されるすべての新しい `GameplayEffects` に追加します。 サーバーが `OnlyServerWait` の `WaitNetSync` にヒットすると、続行する前に、クライアントから新しいスコープ付き Prediction （予測）キーを受信するまでするまで待機します。 このスコープ付き Prediction （予測）キーはアクティベーション prediction （予測）キーと同じ様に振る舞います - `GameplayEffects` に適用され、クライアントにレプリケーションされて失効したとマークされます。 このスコープ付き Prediction （予測）キーはスコープから外れるまで有効です。つまり、スコープ付き Prediction （予測）ウィンドウが閉じます。 繰り返しになりますが、（ Latent なものがない）アトミック操作のみ新しいスコープ付き Prediction （予測）キーが使用できます。
 
 スコープ付き Prediction （予測）ウィンドウは、必要な数だけ作成できます。
 
