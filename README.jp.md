@@ -310,7 +310,7 @@ GAS を有効にするために必要なことはこれだけです。ここか�
 
 <a name="concepts-asc-rm"></a>
 
-### 4.1.1 レプリケーションモード
+#### 4.1.1 レプリケーションモード
 
 `ASC` は `GameplayEffects` と `GameplayTags` と `GameplayCues` をレプリケーションするための３つの異なるモード（`Full` `Mixed` `Minimal`）を定義しています。 `Attributes` は `AttributeSet` によってレプリケーションされます。
 
@@ -328,7 +328,7 @@ GAS を有効にするために必要なことはこれだけです。ここか�
 
 <a name="concepts-asc-setup"></a>
 
-### 4.1.2 セットアップと初期化
+#### 4.1.2 セットアップと初期化
 
 `ASC` は通常、 `OwnerActor` のコンストラクタで構築され、明示的にレプリケーションさせるようにします。 **これは C++ で行う必要があります。**
 
@@ -456,9 +456,6 @@ void AGDHeroCharacter::OnRep_PlayerState()
 `GameplayTags` の名前変更を行うと、リダイレクタが作成され、元の `GameplayTag` を参照しているアセットが新しい `GameplayTag` にリダイレクトされるようになります。 可能であれば、新しい `GameplayTags` を作成し、すべての参照を新しい `GameplayTags` に手動で変更した後に、古い `GameplayTags` を削除することで、リダイレクタが生成されないようにすることをおすすめします。
 
 `Fast Replication` に加えて、 `GameplayTag` エディターにはよくレプリケーションされる `GameplayTags` を埋める、さらなる最適化オプションがあります。
-
-> Translators notes:SentyaAnko  
-> 「よくレプリケーションされる `GameplayTags` を埋める、さらなる最適化オプション」の詳細不明、要確認  
 
 `GameplayTags` は `GameplayEffect` から追加された場合にレプリケーションされます。 `ASC` はレプリケーションされず、手動管理が必要な `LooseGameplayTags` を追加可能にしています。 サンプルプロジェクトでは `State.Dead` に `LooseGameplayTag` を使用することで、 Owning Client （所有クライアント）のヘルスがゼロになった際にすぐ応答できるようにしています。 リスポーンは `TagMapCount` を手動でゼロに戻しています。 `LooseGameplayTags` を操作している場合のみ、 `TagMapCount` の調整を手動で行ってください。 `UAbilitySystemComponent::AddLooseGameplayTag()` と `UAbilitySystemComponent::RemoveLooseGameplayTag()` の関数を使用するほうが、手動で `TagMapCount` を調整するよりも望ましいです。
 
@@ -947,9 +944,9 @@ virtual void OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target
 > Translators notes:SentyaAnko  
 >> autonomous proxy  
 >> Simulated proxies  
->  は、 EngineTypes.h の ENetRole 関連の話。
->  あるいは、 NetworkPredictionTypes.h の EReplicationProxyTarget ？おそらく前者。
->  EngineTypes.h より :
+> がわからない場合は、 [「UE4 でマルチプレイゲームを作ろう」](https://www.docswell.com/s/EpicGamesJapan/ZWX64K-UE4_CEDEC19_MultiPlayerGame) の [84 ページ以降](https://www.docswell.com/s/EpicGamesJapan/ZWX64K-UE4_CEDEC19_MultiPlayerGame#p84) のネットロールについての説明がわかりやすいです。
+> コード的には EngineTypes.h の ENetRole 関連の話。
+> EngineTypes.h より :
 >> ```c++
 >> /** The network role of an actor on a local/remote network context */
 >> UENUM()
@@ -964,17 +961,6 @@ virtual void OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target
 >> 	/** Authoritative control over the actor. */
 >> 	ROLE_Authority,
 >> 	ROLE_MAX,
->> };
->  NetworkPredictionTypes.h より :
->> ```c++
->> UENUM()
->> enum class EReplicationProxyTarget: uint8
->> {
->> 	ServerRPC,			// Client -> Server
->> 	AutonomousProxy,	// Owning/Controlling client
->> 	SimulatedProxy,		// Non owning client
->> 	Replay,				// Replay net driver
->> 	Debug,				// Replication target that is disabled in shipping
 >> };
 >> ```
 
@@ -1198,7 +1184,7 @@ source ASC と target ASC のタグは `GameplayEffects` にキャプチャさ�
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Gameplay Effect Asset Tags        | `GameplayEffect` が所持しているタグ。 それらは自身では何の機能も果たさず、 `GameplayEffect` を説明する目的のみを果たします。                                                                                                                                                                                                                                                                  |
 | Granted Tags                      | `GameplayEffect` 上に存在するが、 `GameplayEffect` が与えられた `ASC` にも与えられるタグ。 `GameplayEffect` が削除される際に `ASC` からも削除されます。 `Duration` と `Infinite` の `GameplayEffects` のみで機能します。                                                                                                                                                                      |
-| Ongoing Tag Requirements          | 一度適用されると、これらのタグは `GameplayEffect` がオンかオフかを決定します。 `GameplayEffect` をオフにしても適用されたままとなります。 もし「 Ongoing Tag Requirements が失敗したため `GameplayEffect` がオフ」であるが、 requirements が満たされた場合、 `GameplayEffect` は再びオンになり、 modifiers を再適用します。 `Duration` と `Infinite` の `GameplayEffects` でのみ機能します。 |
+| Ongoing Tag Requirements          | 一度適用されると、これらのタグは `GameplayEffect` がオンかオフかを決定します。 `GameplayEffect` をオフで適用さセルコができます。 もし「 Ongoing Tag Requirements が失敗したため `GameplayEffect` がオフ」であっても、 requirements が満たされた場合、 `GameplayEffect` は再びオンになり、 modifiers を再適用します。 `Duration` と `Infinite` の `GameplayEffects` でのみ機能します。 |
 | Application Tag Requirements      | `GameplayEffect` がターゲットに適用できるかを決定するターゲット上のタグ。 これらの要件が満たされていない場合、 `GameplayEffect` は適用されません。                                                                                                                                                                                                                                            |
 | Remove Gameplay Effects with Tags | この `GameplayEffect` が 正常に適用された時、`Asset Tags` または `Granted Tags` にこれらのタグが含まれているターゲット上の `GameplayEffects` はターゲットから削除されます。                                                                                                                                                                                                                   |
 
@@ -1222,11 +1208,7 @@ source ASC と target ASC のタグは `GameplayEffects` にキャプチャさ�
 
 #### 4.5.9 Gameplay Effect Spec
 
- [`GameplayEffectSpec`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/FGameplayEffectSpec/index.html) (`GESpec`) は `GameplayEffects` のインスタンス化と考えることができます。 それらは、「それらが示す `GameplayEffect` クラスへの参照、それが作成されたレベル、作成した人」を保持します。 これらは実行時の適用前に自由に作成され、変更されます。 実行に先駆けて設計者によって作成される `GameplayEffects` とは異なります。 `GameplayEffect` を適用する時、 `GameplayEffectSpec` は `GameplayEffect` から作られ、実際にターゲットに適用されます。
-
-> Translators notes:Suggestion:SentyaAnko  
-> This translation is likely to be incorrect.  
->> These can be freely created and modified at runtime before application unlike `GameplayEffects` which should be created by designers prior to runtime.
+ [`GameplayEffectSpec`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/FGameplayEffectSpec/index.html) (`GESpec`) は `GameplayEffects` のインスタンス化と考えることができます。 それらは、「それらが示す `GameplayEffect` クラスへの参照、それが作成されたレベル、作成した人」を保持します。 これらは実行時の適用前に自由に作成され、変更されます。 実行に先駆けて設計者によって作成される `GameplayEffects` とは異なり、`GameplayEffectSpec` は実行の際の適用前に自由に作成・修正することができます。
 
 `GameplayEffectSpecs` は `GameplayEffects` から作られます。 `BlueprintCallable` である `UAbilitySystemComponent::MakeOutgoingSpec()` を使用することで行われます。 `GameplayEffectSpecs` はすぐに適用される必要がありません。 それはアビリティによって作られた投射物に `GameplayEffectSpec` を渡すのが一般的です。 後で投射物が命中したターゲットにそれを適用できます。 `GameplayEffectSpecs` が正常に適用された時、 `FActiveGameplayEffect` と呼ばれる新しい構造体を返します。
 
@@ -1606,7 +1588,7 @@ void UPGGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, 
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 		SpecHandle.Data.Get()->DynamicGrantedTags.AppendTags(CooldownTags);
-		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName(  OurSetByCallerTag  )), CooldownDuration.GetValueAtLevel(GetAbilityLevel()));
+		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName(OurSetByCallerTag)), CooldownDuration.GetValueAtLevel(GetAbilityLevel()));
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 }
@@ -2142,12 +2124,7 @@ FGameplayAbilitySpecHandle GiveAbilityAndActivateOnce(const FGameplayAbilitySpec
 1. `InternalServerTryActivateAbility()` を呼び出す
 1. `InternalTryActivateAbility()` を呼び出す
 1. `CanActivateAbility()` を呼び出し、「 `GameplayTag` の要件を満たしているか」、「 `ASC` がコストを支払えるか」、「 `GameplayAbility` がクールダウン中ではないか」、そして「現在有効な他のインスタンスがないか」を返す
-1. もし「サーバーによって有効化が確認されたことを `ActivationInfo` を更新するように指示」し「 `OnConfirmDelegate` デリゲートでブロードキャストする」ことに成功したら、 `ClientActivateAbilitySucceed()` を呼び出す。 これは入力確認と同じではありません。
-	> Translators notes:SentyaAnko  
-	> Todo:Check here
-	> This translation is likely to be incorrect.  
-	> I need to check the implementation of function ```UAbilitySystemComponent::InternalTryActivateAbility()```.
-	>> 1. Calls `ClientActivateAbilitySucceed()` if successful telling it to update its `ActivationInfo` that its activation was confirmed by the server and broadcasting the `OnConfirmDelegate` delegate. This is not the same as input confirmation.
+1. 成功した場合、 `ClientActivateAbilitySucceed()` を呼び出し、「サーバーによって有効化が確認されたことを `ActivationInfo` を更新するように指示」し「 `OnConfirmDelegate` デリゲートをブロードキャスト」する。 これは入力確認と同じではありません。
 1. `CallActivateAbility()` を呼び出す
 1. `PreActivate()` を呼び出す、 Epic はこれを「 boilerplate init stuff （お決まりの初期化要素）」と呼んでいる
 1. `ActivateAbility()` を呼び出す、最終的にアビリティが有効化される
@@ -2425,7 +2402,7 @@ GASShooter はブループリントノードを公開し、（前述のローカ
 
 <a name="concepts-at-definition"></a>
 
-### 4.7.1 Ability Task の定義
+#### 4.7.1 Ability Task の定義
 
 `GameplayAbilities` は１フレームでのみ実行されます。 これだけではあまりに柔軟性がありません。 「時間の経過とともに発生する」または「後のある時点で発火されたデリゲートからの応答が必要になる」アクションを実行するために、 `AbilityTasks` と呼ばれる Latent アクションを使用します。
 
@@ -2444,7 +2421,7 @@ RTS ゲームのような、数百のキャラクターがワールドに同時�
 
 <a name="concepts-at-definition"></a>
 
-### 4.7.2 Custom Ability Tasks （Ability Tasks のカスタム）
+#### 4.7.2 Custom Ability Tasks （Ability Tasks のカスタム）
 
 多くの場合、独自のカスタム `AbilityTasks` (in C++) を作ることになります。 サンプルプロジェクトには２つのカスタム `AbilityTasks` が付属しています :
 1. `PlayMontageAndWaitForEvent` はデフォルトの `PlayMontageAndWait` と `WaitGameplayEvent` `AbilityTasks` の組み合わせです。 これにより、アニメーションモンタージュに gameplay events を `AnimNotifies` からそれを開始した `GameplayAbility` に送り返すのを可能にします。 これを使うことにより、アニメーションモンタージュ中の特定の時間にアクションが発動できます。
@@ -2468,7 +2445,7 @@ RTS ゲームのような、数百のキャラクターがワールドに同時�
 
 <a name="concepts-at-using"></a>
 
-### 4.7.3 Using Ability Tasks
+#### 4.7.3 Using Ability Tasks
 
 C++ での `AbilityTask` の作成と有効化を行う方法（ `GDGA_FireGun.cpp` より） :
 
@@ -2491,7 +2468,7 @@ Task->ReadyForActivation();
 
 <a name="concepts-at-rms"></a>
 
-### 4.7.4 Root Motion Source Ability Tasks （ルートモーションソースを用いた Ability Tasks）
+#### 4.7.4 Root Motion Source Ability Tasks （ルートモーションソースを用いた Ability Tasks）
 
 GAS には、 `CharacterMovementComponent` にフックされた `Root Motion Sources` を使用して（ノックバック、複雑なジャンプ、プル、ダッシュなどの）`Characters` を時間の経過とともに移動させるための、 `AbilityTasks` が付属しています。
 
@@ -2774,12 +2751,7 @@ UE 4.24 から、 [`TargetData`](#concepts-targeting-data) を使用するため
 
 ### 4.10 Prediction （予測）
 
-GAS はクライアントサイドの prediction （予測）のサポートする機能を備えています : しかしながら、すべてを predict （予測）するわけではありません。 GAS のクライアントサイドの prediction （予測）は、クライアントはサーバーの「 `GameplayAbility` の有効化と `GameplayEffects` の適用」の許可を待つ必要がないことを意味します。 （それは）サーバーが（それに）これをする許可を与えることを 「 predict （予測）」 でき、 `GameplayEffects` を適用するであろうターゲットを predict （予測）する事ができます。 次に、クライアントが有効化した後、サーバーは `GameplayAbility` のネットワークの遅延時間を実行し、クライアントの predictions （予測）が正しいかそうでないかをクライアントに伝えます。 もしクライアントが predictions （予測）のいずれかで間違っていた場合、サーバーと一致するように「 mispredictions （予測ミス）」変更を「ロールバック」します。
-
-> Translators notes:Suggestion:SentyaAnko  
-> This translation is likely to be incorrect.  
->> It can "predict" the server giving it permission to do this and predict the targets that it would apply `GameplayEffects` to.  
->> The server then runs the `GameplayAbility` network latency-time after the client activates and tells the client if he was correct or not in his predictions.  
+GAS はクライアントサイドの prediction （予測）のサポートする機能を備えています : しかしながら、すべてを predict （予測）するわけではありません。 GAS のクライアントサイドの prediction （予測）は、クライアントはサーバーの「 `GameplayAbility` の有効化と `GameplayEffects` の適用」の許可を待つ必要がないことを意味します。 クライアントは、サーバーが許可を与えることを 「 predict （予測）」し、 `GameplayEffects` を適用するターゲットを predict （予測）する事ができます。 サーバーは、クライアントが有効化した後、ネットワークの遅延時間を経て `GameplayAbility` を実行し、クライアントの predictions （予測）が正しいかそうでないかをクライアントに伝えます。 もしクライアントが predictions （予測）のいずれかで間違っていた場合、サーバーと一致するように「 mispredictions （予測ミス）」変更を「ロールバック」します。
 
 GAS 関連の prediction （予測）の最も信頼の置けるソースは、プラグインのソースコードにある `GameplayPrediction.h` です。
 
@@ -2906,7 +2878,7 @@ Epic による新しい [`Network Prediction` plugin](#concepts-p-npp) は `Char
 
 #### 4.10.5 Network Prediction Plugin （ネットワーク予測プラグイン）
 
-Epic は近頃、`CharacterMovementComponent` を新しい `Network Prediction` プラグインに置き換える取り組みを開始しました。 このプラグインはまだ非常に初期段階ですが、 Unreal Engine の GitHub で非常に早い段階でアクセスし利用できます。 エンジンのどの将来のバージョンでそれが実験的なベータデビューを果たすのかを語るのは時期尚早です。
+Epic は近頃、`CharacterMovementComponent` を新しい `Network Prediction` プラグインに置き換える取り組みを開始しました。 このプラグインはまだ非常に初期段階ですが、 Unreal Engine の GitHub で very early access できます。 エンジンのどの将来のバージョンでそれが実験的なベータデビューを果たすのかを語るのは時期尚早です。
 
 **[⬆ Back to Top](#table-of-contents)**
 
@@ -3289,10 +3261,6 @@ log list
 ### 7.3 AbilitySystemComponent Replication Mode
 
 デフォルトでは、 [`ASC`](#concepts-asc) は [`Full Replication Mode`](#concepts-asc-rm) です。 これにより、すべての [`GameplayEffects`](#concepts-ge) がすべてのクライアントにレプリケーションされます（これはシングルプレイヤーゲームには問題ありません。）。 マルチプレイヤーゲームでは、プレイヤーが所有する `ASCs` は `Mixed Replication Mode` を設定し、 AI 制御のキャラクターは `Minimal Replication Mode` を設定します。 これにより、プレイヤーキャラクターに適用された `GEs` はそのキャラクターの所有者のみにレプリケーションされ、 AI 制御のキャラクターに適用された `GEs` はクライアントにレプリケーションされません。 [`GameplayTags`](#concepts-gt) は 引き続きレプリケーションされ、 [`GameplayCues`](#concepts-gc) は `Replication Mode` に関係なく、引き続き信頼性の低い NetMulticasts ですべてのクライアントに送られます。 これにより、すべてのクライアントが表示する必要がない場合、レプリケーションされる `GEs` からのネットワークのデータが削減されます。
-
-> Translators notes:SentyaAnko  
-> This translation is likely to be incorrect.  
->> This will replicate `GEs` applied on a player character to only replicate to the owner of that character and `GEs` applied on AI controlled characters will never replicate `GEs` to clients.  
 
 <a name="optimizations-attributeproxyreplication"></a>
 
