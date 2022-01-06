@@ -1385,7 +1385,7 @@ Snapshotting は `Attribute` を `GameplayEffectSpec` が作られた時にキ�
 
 `Attribute` のキャプチャの設定は、 Epic の ActionRPG Sample Project によって設定されたパターンに従って、「保持する構造体を定義」し、「`Attributes` をキャプチャする方法を定義」し、「構造体のコンストラクタ内でコピーを１つ作成」します。 すべての `ExecCalc` に対し、同様の構造体を持つことになります。 **Note:** 各構造体は同一の namespace を共有するため、一意の名前が必要です。 構造体に同じ名前を使うと、 `Attributes` をキャプチャする際に誤った動作が発生します（殆どの場合、間違った `Attributes` の値がキャプチャされます）。
 
-`Local Predicted （ローカル予測）` の為、 `Server Only` と `Server Initiated` [`GameplayAbilities`](#concepts-ga) はサーバー側でのみ `ExecCalc` が呼び出されます。
+`Local Predicted （ローカル予測）` 、 `Server Only` 、 `Server Initiated` [`GameplayAbilities`](#concepts-ga) の場合は、 `ExecCalc` はサーバー側でのみの呼び出しとなります。
 
 受けたダメージの計算（ `Source` と `Target` の多くのアトリビュートを読み取り複雑な式に基づく）は、最も一般的な `ExecCalc` の例です。 同梱のサンプルプロジェクトにはダメージ計算するための単純な `ExecCalc` （ `GameplayEffectSpec` の [`SetByCaller`](#concepts-ge-spec-setbycaller) からダメージ値を読み取り、`Target` からキャプチャされた アーマー `Attribute` に基づいて値を軽減する）が含まれます。 詳細については、 `GDDamageExecCalculation.cpp/.h` を参照してください。
 
