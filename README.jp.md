@@ -1089,7 +1089,7 @@ Multipliers: `1.1, 0.5`
 Multipliers: `5, 5`  
 `1 + (5 - 1) + (5 - 1) = 9` 、`10` を誤って期待しました。 常に `Modifiers の合計 - Modifiers の数 + 1` になります。
 
-多くのゲームでは、 `BaseValue` に適用する前に `Modify` と `Divide` `Modifiers` の乗算と除算を一緒に行いたいと思うでしょう。 これを成し遂げるには `FAggregatorModChannel::EvaluateWithBase()` の **エンジンコードの変更** が必要となります。
+多くのゲームでは、 `BaseValue` に適用する前に `Multiply` と `Divide` `Modifiers` の乗算と除算を一緒に行いたいと思うでしょう。 これを成し遂げるには `FAggregatorModChannel::EvaluateWithBase()` の **エンジンコードの変更** が必要となります。
 
 ```c++
 float FAggregatorModChannel::EvaluateWithBase(float InlineBaseValue, const FAggregatorEvaluateParameters& Parameters) const
@@ -1714,7 +1714,7 @@ bool APGPlayerState::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTa
 
 **Note:** クライアント上で追加または削除される `GameplayEffect` をリッスンするには、レプリケーションされた `GameplayEffects` を受信できる必要があります。 これは、 `ASC` の [レプリケーションモード](#concepts-asc-rm) によって異なります。
 
-サンプルプロジェクトは `GameplayEffect` のクールダウンの開始と終了をリッスンするカスタムブループリントノードを含んでいます。 HUD UMG ウィジェットはこれを使ってメテオのクールダウンの残り時間の量を更新しています。 詳細については、 `AsyncTaskEffectCooldownChanged.h/cpp` を参照してください。
+サンプルプロジェクトは `GameplayEffect` のクールダウンの開始と終了をリッスンするカスタムブループリントノードを含んでいます。 HUD UMG ウィジェットはこれを使ってメテオのクールダウンの残り時間の量を更新しています。 詳細については、 [`AsyncTaskCooldownChanged.h/cpp`](Source/GASDocumentation/Private/Characters/Abilities/AsyncTaskCooldownChanged.cpp) を参照してください。
 
 
 ![Listen for Cooldown Change BP Node](https://github.com/tranek/GASDocumentation/raw/master/Images/cooldownchange.png)
@@ -2892,7 +2892,7 @@ Epic は近頃、`CharacterMovementComponent` を新しい `Network Prediction` 
 
 [`FGameplayAbilityTargetData`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/FGameplayAbilityTargetData/index.html) は、ネットワークを介して渡されることを意図した、ターゲットのデータのための一般的な構造体です。 `TargetData` は一般的に、 `AActor`/`UObject` の参照や、 `FHitResults` や、その他の一般的な座標/向き/起点情報を保持しています。 しかしながら、[`GameplayAbilities` でクライアントとサーバー間でデータを渡す](#concepts-ga-data) ための簡単な手段として、本質的に必要なものを内部に配置するために、サブクラス化できます。 基本の構造体 `FGameplayAbilityTargetData` は直接使うためのものではなく、サブクラス化するためのものです。 `GAS` には `FGameplayAbilityTargetData` をサブクラス化したいくつかのすばらしい構造体が付属しており、それらは `GameplayAbilityTargetTypes.h`にあります。
 
-`TargetData` は一般的に、 [`Target Actors`](#concepts-targeting-actors) に生成されるか **手動で作成され** 、[`EffectContext`](#concepts-ge-context) を介して [`AbilityTasks`](##concepts-at) と [`GameplayEffects`](#concepts-ge) に消費されます。 `EffectContext` にある結果として、 [`Executions`](#concepts-ge-ec) と [`MMCs`](#concepts-ge-mmc) と [`GameplayCues`](#concepts-gc) と [`AttributeSet`](#concepts-as) のバックエンドの関数では `TargetData` にアクセスできます。
+`TargetData` は一般的に、 [`Target Actors`](#concepts-targeting-actors) に生成されるか **手動で作成され** 、[`EffectContext`](#concepts-ge-context) を介して [`AbilityTasks`](#concepts-at) と [`GameplayEffects`](#concepts-ge) に消費されます。 `EffectContext` にある結果として、 [`Executions`](#concepts-ge-ec) と [`MMCs`](#concepts-ge-mmc) と [`GameplayCues`](#concepts-gc) と [`AttributeSet`](#concepts-as) のバックエンドの関数では `TargetData` にアクセスできます。
 
 通常は、 `FGameplayAbilityTargetData` を直接渡さず、かわりに [`FGameplayAbilityTargetDataHandle`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/FGameplayAbilityTargetDataHandle/index.html) を使います。 これは内部に `FGameplayAbilityTargetData` へのポインターの TArray を所持しています。 これは、 `TargetData` のポリモーフィズムのサポートを提供する中間の構造体です。
 
