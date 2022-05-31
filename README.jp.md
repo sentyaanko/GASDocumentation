@@ -1,10 +1,10 @@
 ﻿# GASDocumentation
 
-シンプルなマルチプレイヤーサンプルプロジェクトを使用した、 Unreal Engine 4 の GameplayAbilitySystem プラグイン (GAS) についての私の理解。これは公式のドキュメントではなく、このプロジェクトも私も EpicGames と提携していません。私はこの情報の正確性を保証しません。
+シンプルなマルチプレイヤーサンプルプロジェクトを使用した、 Unreal Engine 5 の GameplayAbilitySystem プラグイン (GAS) についての私の理解。これは公式のドキュメントではなく、このプロジェクトも私も EpicGames と提携していません。私はこの情報の正確性を保証しません。
 
 このドキュメントの目的は、 GAS の主要な概念とクラスを説明し、 GAS での私の経験に基づいていくつかの追加の解説を提供することです。 コミュニティのユーザーの間には GAS の「仲間内の智恵（tribal knowledge）」がたくさんあり、私はここでの私の全てを共有することを目指しています。
 
-サンプルプロジェクトとドキュメントは、 **Unreal Engine 4.27** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
+サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.0** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
 
 [GASShooter](https://github.com/tranek/GASShooter) は、マルチプレイヤー FPS/TPS 向けの GAS を使用した高度なテクニックを示す姉妹サンプルプロジェクトです。
 
@@ -154,6 +154,7 @@
 >    9.2 [`ScriptStructCache` errors](#troubleshooting-scriptstructcache)  
 >    9.3 [Animation Montages are not replicating to clients](#troubleshooting-replicatinganimmontages)  
 >    9.4 [Duplicating Blueprint Actors is setting AttributeSets to nullptr ( Blueprint のアクターを複製すると、AttributeSets が nullptr に設定される)](#troubleshooting-duplicatingblueprintactors)  
+>    9.5 [unresolved external symbol UEPushModelPrivate::MarkPropertyDirty(int,int)](#troubleshooting-unresolvedexternalsymbolmarkpropertydirty)  
 > 1. [Common GAS Acronyms （一般的な GAS の頭字語）](#acronyms)  
 > 1. [Other Resources](#resources)  
 >    11.1 [Q&A With Epic Game's Dave Ratti](#resources-daveratti)  
@@ -173,7 +174,7 @@
 [公式ドキュメント](https://docs.unrealengine.com/en-US/Gameplay/GameplayAbilitySystem/index.html) （[日本語版](https://docs.unrealengine.com/ja/InteractiveExperiences/GameplayAbilitySystem/index.html)） から :
 >ゲーム アビリティ システム は、 RPG や MOBA タイトルで使用される能力やアトリビュート の構築のための柔軟性の高いフレームワークです。ゲーム内で使用するアクションやパッシブ アビリティ、これらのアクションの結果としてさまざまなアトリビュートを作成または消耗させるステータス エフェクトを構築したり、これらのアクションの使用を制御するための「クールダウン」タイマーあるいはリソース コストの実装をしたり、各レベルでの能力とその効果のレベルを変更したり、パーティクルやサウンドエフェクトなどをアクティベートすることができます。簡単に言えば、このシステムは、近年の RPG や MOBA タイトルに組み込まれているジャンプのように単純なものから、お気に入りのキャラクターのアビリティと同じくらい複雑なゲーム アビリティの設計、実装および効率の良いネットワーク化を容易にします。
 
-GameplayAbilitySystem プラグインは Epic Games によって開発され、 Unreal Engine 4 (UE4) に付属しています。 Paragon や Fortnite などの AAA商用ゲームでバトルテストが行われています。
+GameplayAbilitySystem プラグインは Epic Games によって開発され、 Unreal Engine 5 (UE5) に付属しています。 Paragon や Fortnite などの AAA商用ゲームでバトルテストが行われています。
 
 プラグインは、以下のシングル及びマルチプレイヤーゲームですぐに使用できるソリューションを提供します :
 * コストとクールダウンのオプションがあるレベルベースのキャラクターアビリティまたはスキルの実装 ([GameplayAbilities](#concepts-ga))
@@ -204,7 +205,7 @@ GAS の現在の課題 :
 
 ## 2. サンプルプロジェクト
 
-このドキュメントには、 GameplayAbilitySystem プラグインは初めてではあるが、 Unreal Engine 4 は利用したことがある人々を対象とした、マルチプレイヤーサードパーソンシューティングのサンプルプロジェクトが含まれています。ユーザー（プロジェクトの利用者）は UE4 の C++、ブループリント、UMG、レプリケーション、及びその他の中級トピックの知識が必要です。このプロジェクトでは、初歩的なサードパーソンシューティングのマルチプレイヤー対応プロジェクトを、プレイヤー/AI に制御されたヒーロー用のクラス `PlayerState` に `AbilitySystemComponent` (`ASC`) を、同様に、 AI に制御されたミニオン用のクラス `Character` に `ASC` を、それぞれセットアップする方法の例を提供します。
+このドキュメントには、 GameplayAbilitySystem プラグインは初めてではあるが、 Unreal Engine 5 は利用したことがある人々を対象とした、マルチプレイヤーサードパーソンシューティングのサンプルプロジェクトが含まれています。ユーザー（プロジェクトの利用者）は UE5 の C++、ブループリント、UMG、レプリケーション、及びその他の中級トピックの知識が必要です。このプロジェクトでは、初歩的なサードパーソンシューティングのマルチプレイヤー対応プロジェクトを、プレイヤー/AI に制御されたヒーロー用のクラス `PlayerState` に `AbilitySystemComponent` (`ASC`) を、同様に、 AI に制御されたミニオン用のクラス `Character` に `ASC` を、それぞれセットアップする方法の例を提供します。
 
 このプロジェクトの目標は、このプロジェクトを単純に保ちつつ、 GAS の基本を示し、しばしば求められるアビリティをよくコメントされたコードで示すことです。初心者向けの為、高度なトピック、例えば [投射物の predicting （予測）](#concepts-p-spawn) のようなものは紹介していません。
 
@@ -437,7 +438,7 @@ void AGDHeroCharacter::OnRep_PlayerState()
 `FGameplayTagCountContainer` に格納されている `GameplayTags` は `GameplayTag` のインスタンス数を格納する `TagMap` を所持しています。 `FGameplayTagCountContainer` にはまだ `GameplayTag` が含まれているにもかかわらず `TagMapCount` はゼロかもしれません。 デバッグ中、 `ASC` にまだ `GameplayTag` が残っていると、この現象に遭遇する可能性があります。 `HasTag()` や `HasMatchingTag()` やその他同様の関数は、いずれも `TagMapCount` をチェックし、 `GameplayTag` が存在しない、または `TagMapCount` がゼロの場合は false を返します。
 
 > Translators notes:SentyaAnko  
-> このあたり、 UE4 のソース内で該当のコードを見つけることができません。  
+> このあたり、 UE5 のソース内で該当のコードを見つけることができません。  
 > 翻訳が正しくないか、原文がなにか古い情報をもとにしている可能性があります。  
 > 具体的には、FGameplayTagCountContainer や FGameplayTags に TagMap や TagMapCount という変数や関数がありません。  
 >  
@@ -447,7 +448,7 @@ void AGDHeroCharacter::OnRep_PlayerState()
 > HasTag() -> 該当なし  
 > HasMatchingTag() -> HasMatchingGameplayTag()  
 
-`GameplayTags` は `DefaultGameplayTags.ini` にて事前に定義する必要があります。 UE4 エディターはプロジェクト設定にインターフェイスを提供しており、開発者は `DefaultGameplayTags.ini` を手動編集せずに `GameplayTags` を管理できます。 `GameplayTag` エディターは `GameplayTags` の作成、名前変更、参照の検索、及び削除を行うことができます。
+`GameplayTags` は `DefaultGameplayTags.ini` にて事前に定義する必要があります。 UE5 エディターはプロジェクト設定にインターフェイスを提供しており、開発者は `DefaultGameplayTags.ini` を手動編集せずに `GameplayTags` を管理できます。 `GameplayTag` エディターは `GameplayTags` の作成、名前変更、参照の検索、及び削除を行うことができます。
 
 ![GameplayTag Editor in Project Settings](https://github.com/tranek/GASDocumentation/raw/master/Images/gameplaytageditor.png)
 
@@ -2769,7 +2770,7 @@ Epic の考え方は、「やり過ごすことができる」ものだけを pr
 >    * GameplayTag の変更
 > * Gameplay Cue イベント（「 predictive （予測） gameplay effect の内側」と「それ自体」の両方から）
 > * モンタージュ
-> * 移動 （ UE4 に組み込まれている UCharacterMovement ）
+> * 移動 （ UE5 に組み込まれている UCharacterMovement ）
 
 **predicted （予測）されないもの :**
 > * GameplayEffect の削除
@@ -3149,7 +3150,7 @@ if (SpecAssetTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Damage.C
 
 GAS は実行時にこれらの質問に答えるための２つの手法が付属しています - [`showdebug abilitysystem`](#debugging-sd) と [`GameplayDebugger`](#debugging-gd) の中でのフックです。
 
-**Tip:** UE4 は C++ のコードを最適化するのが好きなので、いくつかの関数のデバッグが困難になります。 コードを深くトレースしている時、これに遭遇するのはまれです。 Visual Studio solution の設定を `DebugGame Editor` に設定してもコードのトレースと値のインスペクトが困難の場合、最適化された関数を `PRAGMA_DISABLE_OPTIMIZATION_ACTUAL` と `PRAGMA_ENABLE_OPTIMIZATION_ACTUAL` マクロでラッピングすることですべての最適化を無効化できます。 プラグインをソースからリビルドするまで、これをプラグインコードで使用することはできません。 これは、インライン関数では、何をしていて何処にあるかに応じて、機能する場合としない場合があります。 デバッグが完了したら必ずマクロを削除してください！
+**Tip:** UE5 は C++ のコードを最適化するのが好きなので、いくつかの関数のデバッグが困難になります。 コードを深くトレースしている時、これに遭遇するのはまれです。 Visual Studio solution の設定を `DebugGame Editor` に設定してもコードのトレースと値のインスペクトが困難の場合、最適化された関数を `PRAGMA_DISABLE_OPTIMIZATION_ACTUAL` と `PRAGMA_ENABLE_OPTIMIZATION_ACTUAL` マクロでラッピングすることですべての最適化を無効化できます。 プラグインをソースからリビルドするまで、これをプラグインコードで使用することはできません。 これは、インライン関数では、何をしていて何処にあるかに応じて、機能する場合としない場合があります。 デバッグが完了したら必ずマクロを削除してください！
 
 ```c++
 PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
@@ -3235,7 +3236,7 @@ log list
 | LogGameplayTasks          | Log                     |
 | VLogAbilitySystem         | Display                 |
 
-詳細については、 [Wiki on Logging](https://www.ue4community.wiki/Legacy/Logs,_Printing_Messages_To_Yourself_During_Runtime) を参照してください。
+詳細については、 [Wiki on Logging](https://unrealcommunity.wiki/logging-lgpidy6i) を参照してください。
 
 
 **[⬆ Back to Top](#table-of-contents)**
@@ -3397,6 +3398,28 @@ if (AbilitySystemComponent)
 
 **[⬆ Back to Top](#table-of-contents)**
 
+<a name="troubleshooting-unresolvedexternalsymbolmarkpropertydirty"></a>
+
+### 9.5 unresolved external symbol UEPushModelPrivate::MarkPropertyDirty(int,int)
+
+以下のようなコンパイルエラーが出た場合：
+
+```
+error LNK2019: unresolved external symbol "__declspec(dllimport) void __cdecl UEPushModelPrivate::MarkPropertyDirty(int,int)" (__imp_?MarkPropertyDirty@UEPushModelPrivate@@YAXHH@Z) referenced in function "public: void __cdecl FFastArraySerializer::IncrementArrayReplicationKey(void)" (?IncrementArrayReplicationKey@FFastArraySerializer@@QEAAXXZ)
+```
+
+これは `FFastArraySerializer` で `MarkItemDirty()` を呼び出そうとしたときに起こります。私はクールダウンの持続時間を更新する時など、 `ActiveGameplayEffect` を更新する際に遭遇しました。
+
+```c++
+ActiveGameplayEffects.MarkItemDirty(*AGE);
+```
+
+何が起こっているかというと、 `WITH_PUSH_MODEL` が複数の場所で定義されているのです。 `PushModelMacros.h` では 0 と定義していますが、複数の場所で 1 と定義されています。 `PushModel.h` は 1 としてみていますが、 `PushModel.cpp` は 0 としてみています。
+
+解決策は、 `Build.cs` の `PublicDependencyModuleNames` に `NetCore` を追加することです。
+
+**[⬆ Back to Top](#table-of-contents)**
+
 <a name="acronyms"></a>
 
 ## 10. Common GAS Acronyms （一般的な GAS の頭字語）
@@ -3424,6 +3447,7 @@ if (AbilitySystemComponent)
 * [公式ドキュメント](https://docs.unrealengine.com/en-US/Gameplay/GameplayAbilitySystem/index.html)
 * ソースコード！
    * 特に `GameplayPrediction.h`
+* [Lyra Sample Project by Epic](https://unrealengine.com/marketplace/en-US/learn/lyra)
 * [Epic による「 Action RPG 」サンプルプロジェクト](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)
 * [Unreal Slackers Discord](https://unrealslackers.org/) には GAS `#gameplay-ability-system` 専用の テキストチャンネルがあります。
    * ピン留めされたメッセージを確認してください
@@ -3786,7 +3810,7 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 * Change: Changed the GameplayCueInterface to pass GameplayCueParameters struct by reference.
 * Optimization: Made several performance improvements to loading and regenerating the GameplayTag table were implemented so that this option would be optimized.
 
-https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/](https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/
+https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_27/
 
 <a name="changelog-4.26"></a>
 ### 4.26
