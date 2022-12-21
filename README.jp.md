@@ -4,7 +4,7 @@
 
 このドキュメントの目的は、 GAS の主要な概念とクラスを説明し、 GAS での私の経験に基づいていくつかの追加の解説を提供することです。 コミュニティのユーザーの間には GAS の「仲間内の智恵（tribal knowledge）」がたくさんあり、私はここでの私の全てを共有することを目指しています。
 
-サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.0** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
+サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.1** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
 
 [GASShooter](https://github.com/tranek/GASShooter) は、マルチプレイヤー FPS/TPS 向けの GAS を使用した高度なテクニックを示す姉妹サンプルプロジェクトです。
 
@@ -161,6 +161,8 @@
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.1 [Community Questions 1](#resources-daveratti-community1)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.2 [Community Questions 2](#resources-daveratti-community2)  
 > 1. [GAS Changelog](#changelog)  
+>    * [5.1](#changelog-5.1)  
+>    * [5.0](#changelog-5.0)  
 >    * [4.27](#changelog-4.27)  
 >    * [4.26](#changelog-4.26)  
 >    * [4.25.1](#changelog-4.25.1)  
@@ -1097,6 +1099,7 @@ float FAggregatorModChannel::EvaluateWithBase(float InlineBaseValue, const FAggr
 {
 	...
 	float Multiplicitive = MultiplyMods(Mods[EGameplayModOp::Multiplicitive], Parameters);
+	float Division = MultiplyMods(Mods[EGameplayModOp::Division], Parameters);
 	...
 
 	return ((InlineBaseValue + Additive) * Multiplicitive) / Division;
@@ -1266,7 +1269,7 @@ float GetSetByCallerMagnitude(FName DataName, bool WarnIfNotFound = true, float 
 float GetSetByCallerMagnitude(FGameplayTag DataTag, bool WarnIfNotFound = true, float DefaultIfNotFound = 0.f) const;
 ```
 
-`GameplayTag` バージョンを使用すること（ `FName` を使用するよりも）をおすすめします。 これによりブループリント内でスペルエラーを防止できます。 また `GameplayTags` は `FNames` よりもネットワーク経由で送信するのにより効率的です。 （ `GameplayEffectSpec` がレプリケーションされる際に `TMaps` もレプリケーションされるためです。）
+`GameplayTag` バージョンを使用すること（ `FName` を使用するよりも）をおすすめします。 これによりブループリント内でスペルエラーを防止できます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
@@ -2064,7 +2067,7 @@ void UGSAbilitySystemComponent::AbilityLocalInputPressed(int32 InputID)
 void AGDCharacterBase::AddCharacterAbilities()
 {
 	// アビリティを付与する、サーバー上でのみ
-	if (Role != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->CharacterAbilitiesGiven)
+	if (Role != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->bCharacterAbilitiesGiven)
 	{
 		return;
 	}
@@ -2075,7 +2078,7 @@ void AGDCharacterBase::AddCharacterAbilities()
 			FGameplayAbilitySpec(StartupAbility, GetAbilityLevel(StartupAbility.GetDefaultObject()->AbilityID), static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID), this));
 	}
 
-	AbilitySystemComponent->CharacterAbilitiesGiven = true;
+	AbilitySystemComponent->bCharacterAbilitiesGiven = true;
 }
 ```
 
@@ -2100,7 +2103,7 @@ bool TryActivateAbility(FGameplayAbilitySpecHandle AbilityToActivate, bool bAllo
 
 bool TriggerAbilityFromGameplayEvent(FGameplayAbilitySpecHandle AbilityToTrigger, FGameplayAbilityActorInfo* ActorInfo, FGameplayTag Tag, const FGameplayEventData* Payload, UAbilitySystemComponent& Component);
 
-FGameplayAbilitySpecHandle GiveAbilityAndActivateOnce(const FGameplayAbilitySpec& AbilitySpec);
+FGameplayAbilitySpecHandle GiveAbilityAndActivateOnce(const FGameplayAbilitySpec& AbilitySpec, const FGameplayEventData* GameplayEventData);
 ```
 
 イベントによる `GameplayAbility` の有効化は、 `GameplayAbility` が `GameplayAbility` で設定された `Triggers` を所持している必要があります。 `GameplayTag` を割り当て、 `GameplayEvent` のオプションを選択します。 イベントを送信するためには、関数 `UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AActor* Actor, FGameplayTag EventTag, FGameplayEventData Payload)` を使用します。 イベントで `GameplayAbility` をアクティブ化することはペイロードデータを渡すことを許可します。
@@ -2147,9 +2150,9 @@ void UGDGameplayAbility::OnAvatarSet(const FGameplayAbilityActorInfo * ActorInfo
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
 
-	if (ActivateAbilityOnGranted)
+	if (bActivateAbilityOnGranted)
 	{
-		bool ActivatedAbility = ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
+		ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
 	}
 }
 ```
@@ -2459,7 +2462,7 @@ Task->OnCancelled.AddDynamic(this, &UGDGA_FireGun::OnCancelled);
 Task->EventReceived.AddDynamic(this, &UGDGA_FireGun::EventReceived);
 Task->ReadyForActivation();
 ```
-ブループリントでは、 `AbilityTask` のために作成したブループリントノードを使用するだけです。 `ReadyForActivate()` を呼び出す必要はありません。 `Engine/Source/Editor/GameplayTasksEditor/Private/K2Node_LatentGameplayTaskCall.cpp` によって自動的に呼び出されます。 `AbilityTask` クラスに存在すれば、`K2Node_LatentGameplayTaskCall` も 自動的に `BeginSpawningActor()` と `FinishSpawningActor()` を呼び出します（ `AbilityTask_WaitTargetData` を参照してください）。 何度もの繰り返しになりますが、 `K2Node_LatentGameplayTaskCall` の自動実行の魔法はブループリントの時のみ行われます。 C++ では、手動で `ReadyForActivation()` と `BeginSpawningActor()` と `FinishSpawningActor()` を呼び出す必要があります。
+ブループリントでは、 `AbilityTask` のために作成したブループリントノードを使用するだけです。 `ReadyForActivation()` を呼び出す必要はありません。 `Engine/Source/Editor/GameplayTasksEditor/Private/K2Node_LatentGameplayTaskCall.cpp` によって自動的に呼び出されます。 `AbilityTask` クラスに存在すれば、`K2Node_LatentGameplayTaskCall` も 自動的に `BeginSpawningActor()` と `FinishSpawningActor()` を呼び出します（ `AbilityTask_WaitTargetData` を参照してください）。 何度もの繰り返しになりますが、 `K2Node_LatentGameplayTaskCall` の自動実行の魔法はブループリントの時のみ行われます。 C++ では、手動で `ReadyForActivation()` と `BeginSpawningActor()` と `FinishSpawningActor()` を呼び出す必要があります。
 
 ![Blueprint WaitTargetData AbilityTask](https://github.com/tranek/GASDocumentation/raw/master/Images/abilitytask.png)
 
@@ -2495,8 +2498,8 @@ GAS には、 `CharacterMovementComponent` にフックされた `Root Motion So
 
 | `GameplayCue` Class                                                                                                                  | Event             | `GameplayEffect` Type    | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`GameplayCueNotify_Static`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayCueNotify_Static/index.html) | `Execute`         | `Instant` or `Periodic`  | Static の `GameplayCueNotifies` は `ClassDefaultObject` （インスタンスが存在しないことを意味します） で動作し、ヒットインパクトのような一回限りのエフェクトに最適です。                                                                                                                                                                                                                                                                                                                                                                                             |
-| [`GameplayCueNotify_Actor`](https://docs.unrealengine.com/en-US/BlueprintAPI/GameplayCueNotify/index.html)                           | `Add` or `Remove` | `Duration` or `Infinite` | Actor の `GameplayCueNotifies` は、 `Added` の場合、新しいインスタンスをスポーンします。 インスタンス化されているため、それらは `Removed` されるまで、時間の経過とともにアクションを実行できます。 これらは「バッキング `Duration` または `Infinite` `GameplayEffect` が削除されるか手動で削除を呼ばれた際」に削除される、ループするサウンドやパーティクルエフェクトに適しています。 これらには、同じエフェクトの複数の適用でサウンドやパーティクルを一度だけ開始するように、同時にどのぐらい `Added` するのを許容するかを管理するオプションも付属しています。 |
+| [`GameplayCueNotify_Static`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayCueNotify_Static/index.html) | `Execute`         | `Instant` or `Periodic`  | Static の `GameplayCueNotifies` は `ClassDefaultObject` （インスタンスが存在しないことを意味します） で動作し、ヒットインパクトのような一回限りのエフェクトに最適です。                                                                                                                                                                                                                                                                                                                                                                                          |
+| [`GameplayCueNotify_Actor`](https://docs.unrealengine.com/en-US/BlueprintAPI/GameplayCueNotify/index.html)                           | `Add` or `Remove` | `Duration` or `Infinite` | Actor の `GameplayCueNotifies` は、 `Added` の場合、新しいインスタンスをスポーンします。 インスタンス化されているため、それらは `Removed` されるまで、時間の経過とともにアクションを実行できます。 これらは「バッキング `Duration` または `Infinite` `GameplayEffect` が削除されるか手動で削除を呼ばれた際」に削除される、ループするサウンドやパーティクルエフェクトに適しています。 また、同時にいくつの `Added` を許可するかを管理するオプションがあり、同じエフェクトを複数回適用しても、サウンドやパーティクルは一度しか起動しないようにすることができます。 |
 
 `GameplayCueNotifies` は技術的には全てのイベントに応答できますが、これは通常我々がこれらをどの様に使用しているかです。
 
@@ -3612,8 +3615,8 @@ PlayerState は論理的な選択で、すべてのクライアントにレプ�
 > 
 > 優先度が高い修正点は以下のとおりです：
 > * CharacterMovementSystem との相互運用性の向上。クライアント prediction （予測）の統一
-> * GE の削除の prediction （予測） (質問 4)
-> * GE のレイテンシーの調停  (質問 8)
+> * GE の削除の prediction （予測） (質問 #4)
+> * GE のレイテンシーの調停  (質問 #7)
 > * RPC のバッチ処理やプロキシ構造など、一般的なんてっとワークの最適化。ほとんどが Fortnite のために行ったものですが、少なくともゲームが独自のゲーム固有の最適化をより簡単にかけるように、より一般化された形に分解する方法を見つけます。
 > 
 > より一般的なリファクタリングタイプの変更を検討しています：
@@ -3709,7 +3712,7 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 > 例えば、「フロントエンド」に戻って、今取り組んでいる技術の中核部分の上に、その最終バージョンを作ることです。
 
 
-4. Main では、しばらくの間、 Gameplay Messages を送信するためのプラグイン（Event/Message Bus のようなもの）がありましたが、削除されてしまいました。  
+4. Main ブランチでは、しばらくの間、 Gameplay Messages を送信するためのプラグイン（Event/Message Bus のようなもの）がありましたが、削除されてしまいました。  
    復活させる予定はありますか？  
    Game Features/Modular Gameplay プラグインでは、汎用の Event Bus Dispatcher があると非常に便利です。
 
@@ -3788,6 +3791,40 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 
 これは「公式の Unreal Engine の更新変更ログ」と「私が遭遇したドキュメント化されていない変更」から集めた、 GAS の注目すべき変更（修正、変更、そして新しい機能）のリストです。 もしあなたがここに記載されていないなにかを見つけたならば、 issue を作成するか、プルリクエストを行ってください。
 
+<a name="changelog-5.1"></a>
+### 5.1
+* Bug Fix: Fixed issue where replicated loose gameplay tags were not replicating to the owner.
+* Bug Fix: Fixed AbilityTask bug where abilities could be blocked from timely garbage-collection.
+* Bug Fix: Fixed an issue when a gameplay ability listening to activate based on a tag would fail to be activated. This would happen if there were more than one Gameplay Ability listening to this tag, and the first one in the list was invalid or didn't have authority to activate.
+* Bug Fix: Fixed GameplayEffects that use Data Registries correctly from warning on load and improved the warning text.
+* Bug Fix: Removed code from UGameplayAbility that was incorrectly only registering the last instanced ability with the Blueprint debugger for breakpoints.
+* Bug Fix: Fixed Gameplay Ability System Ability getting stuck if EndAbility was called during the lock inside ApplyGameplayEffectSpecToTarget.
+* New: Added support for Gameplay Effects to add blocked ability tags.
+* New: Added WaitGameplayTagQuery nodes. One is based off of the UAbilityTask and the other is of UAbilityAsync. This node specifies a TagQuery, and will trigger its output pin when the query becomes true or false, based on configuration.
+* New: Modified AbilityTask debugging in Console Variables to enable debug recording and printing to log by default in non-shipping builds (with ability to hotfix on/off as needed).
+* New: You can now set AbilitySystem.AbilityTask.Debug.RecordingEnabled to 0 to disable, 1 to enable in non-shipping builds, and 2 to enable all builds (including shipping).
+* New: You can use AbilitySystem.AbilityTask.Debug.AbilityTaskDebugPrintTopNResults to only print the top N results in log (to avoid log spam).
+* New: STAT_AbilityTaskDebugRecording can be used to test perf impact from these on-by-default debugging changes.
+* New: Added a debug command to filter GameplayCue events.
+* New: Added new debug commandsAbilitySystem.DebugAbilityTags, AbilitySystem.DebugBlockedTags, andAbilitySystem.DebugAttribute to the Gameplay Ability System.
+* New: Added a Blueprint function to get a debug string representation of a Gameplay Attribute.
+* New: Added a new Gameplay Task resource overlap policy to cancel existing tasks.
+* Change: Now Ability Tasks should make sure to call Super::OnDestroy only after they do anything needed to the Ability pointer, as it will be nulled out after calling it.
+* Change: Converted FGameplayAbilitySpec/Def::SourceObject to be a weak reference.
+* Change: Made a Ability System Component reference in the Ability Task a weak pointer so Garbage Collection can delete it.
+* Change: Removed redundant enum EWaitGameplayTagQueryAsyncTriggerCondition.
+* Change: GameplayTasksComponent and AbilitySystemComponent now support the registered subobject API.
+* Change: Added better logging to indicate why Gameplay Abilities failed to be activated.
+* Change: Removed AbilitySystem.Debug.NextTarget and PrevTarget commands in favor of global HUD NextDebugTarget and PrevDebugTarget commands.
+
+https://docs.unrealengine.com/5.1/en-US/unreal-engine-5.1-release-notes/
+
+<a name="changelog-5.0"></a>
+### 5.0
+
+https://docs.unrealengine.com/5.0/en-US/unreal-engine-5.0-release-notes/
+
+
 <a name="changelog-4.27"></a>
 ### 4.27
 * Crash Fix: Fixed a root motion source issue where a networked client could crash when an Actor finishes executing an ability that uses a constant force root motion task with a strength-over-time modifier.
@@ -3799,7 +3836,7 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 * Bug Fix: Improved thread safety of GameplayTag operations.
 * New: Exposed SourceObject to GameplayAbility's `K2_CanActivateAbility` method.
 * New: Native GameplayTags. Introducing a new `FNativeGameplayTag`, these make it possible to do one off native tags that are correctly registered and unregistered when the module is loaded and unloaded.
-* New: Added new method `GrantAndActivateAbilityOnSelfWithParams` which allows Designers to pass in FGameplayEventData when granting and then activating an ability from Blueprint.
+* New: Updated `GiveAbilityAndActivateOnce` to pass in FGameplayEventData parameter.
 * New: Improved ScalableFloats in the GameplayAbilities plugin to support dynamic lookup of curve tables from the new Data Registry System. Added a ScalableFloat header for easier reuse of the generic struct outside the abilities plugin.
 * New: Added code support for using the GameplayTag UI in other Editor customizations via GameplayTagsEditorModule.
 * New: Modified UGameplayAbility's PreActivate method to optionally take in trigger event data.
