@@ -153,6 +153,7 @@ The best documentation will always be the plugin source code.
 >    9.3 [Animation Montages are not replicating to clients](#troubleshooting-replicatinganimmontages)  
 >    9.4 [Duplicating Blueprint Actors is setting AttributeSets to nullptr](#troubleshooting-duplicatingblueprintactors)  
 >    9.5 [unresolved external symbol UEPushModelPrivate::MarkPropertyDirty(int,int)](#troubleshooting-unresolvedexternalsymbolmarkpropertydirty)  
+>    9.6 [Enum names are now represented by path name](#troubleshooting-enumnamesarenowpathnames)  
 > 1. [Common GAS Acronyms](#acronyms)
 > 1. [Other Resources](#resources)  
 >    11.1 [Q&A With Epic Game's Dave Ratti](#resources-daveratti)  
@@ -1779,7 +1780,9 @@ enum class EGDAbilityInputID : uint8
 If your `ASC` lives on the `Character`, then in `SetupPlayerInputComponent()` include the function for binding to the `ASC`:
 ```c++
 // Bind to AbilitySystemComponent
-AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"), FString("CancelTarget"), FString("EGDAbilityInputID"), static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+FTopLevelAssetPath AbilityEnumAssetPath = FTopLevelAssetPath(FName("/Script/GASDocumentation"), FName("EGDAbilityInputID"));
+AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), AbilityEnumAssetPath, static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
 ```
 
 If your `ASC` lives on the `PlayerState`, there is a potential race condition inside of `SetupPlayerInputComponent()` where the `PlayerState` may not have replicated to the client yet. Therefore, I recommend attempting to bind to input in `SetupPlayerInputComponent()` and `OnRep_PlayerState()`. `OnRep_PlayerState()` is not sufficient by itself because there could be a case where the `Actor's` `InputComponent` could be null when `PlayerState` replicates before the `PlayerController` tells the client to call `ClientRestart()` which creates the `InputComponent`. The Sample Project demonstrates attempting to bind in both locations with a boolean gating the process so it only actually binds the input once.
@@ -2607,6 +2610,99 @@ Epic recently started an initiative to replace the `CharacterMovementComponent` 
 
 We don't typically pass around the `FGameplayAbilityTargetData` directly, instead we use a [`FGameplayAbilityTargetDataHandle`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/FGameplayAbilityTargetDataHandle/index.html) which has an internal TArray of pointers to `FGameplayAbilityTargetData`. This intermediate struct provides support for polymorphism of the `TargetData`.
 
+An example of inheritting from `FGameplayAbilityTargetData`:
+```c++
+USTRUCT(BlueprintType)
+struct MYGAME_API FGameplayAbilityTargetData_CustomData : public FGameplayAbilityTargetData
+{
+    GENERATED_BODY()
+public:
+
+    FGameplayAbilityTargetData_CustomData()
+    { }
+
+    UPROPERTY()
+    FName CoolName = NAME_None;
+
+    UPROPERTY()
+    FPredictionKey MyCoolPredictionKey;
+
+    // This is required for all child structs of FGameplayAbilityTargetData
+    virtual UScriptStruct* GetScriptStruct() const override
+    {
+    	return FGameplayAbilityTargetData_CustomData::StaticStruct();
+    }
+
+	// This is required for all child structs of FGameplayAbilityTargetData
+    bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+    {
+	    // The engine already defined NetSerialize for FName & FPredictionKey, thanks Epic!
+        CoolName.NetSerialize(Ar, Map, bOutSuccess);
+        MyCoolPredictionKey.NetSerialize(Ar, Map, bOutSuccess);
+        bOutSuccess = true;
+        return true;
+    }
+}
+
+template<>
+struct TStructOpsTypeTraits<FGameplayAbilityTargetData_CustomData> : public TStructOpsTypeTraitsBase2<FGameplayAbilityTargetData_CustomData>
+{
+	enum
+	{
+        WithNetSerializer = true // This is REQUIRED for FGameplayAbilityTargetDataHandle net serialization to work
+	};
+};
+```
+For adding the target data to a handle:
+```c++
+UFUNCTION(BlueprintPure)
+FGameplayAbilityTargetDataHandle MakeTargetDataFromCustomName(const FName CustomName)
+{
+	// Create our target data type, 
+	// Handle's automatically cleanup and delete this data when the handle is destructed, 
+	// if you don't add this to a handle then be careful because this deals with memory management and memory leaks so its safe to just always add it to a handle at some point in the frame!
+	FGameplayAbilityTargetData_CustomData* MyCustomData = new FGameplayAbilityTargetData_CustomData();
+	// Setup the struct's information to use the inputted name and any other changes we may want to do
+	MyCustomData->CoolName = CustomName;
+	
+	// Make our handle wrapper for Blueprint usage
+	FGameplayAbilityTargetDataHandle Handle;
+	// Add the target data to our handle
+	Handle.Add(MyCustomData);
+	// Output our handle to Blueprint
+	return Handle
+}
+```
+
+For getting values it requires doing type safety checking, because the only way to get values from the handle's target data is by using generic C/C++ casting for it which is *NOT* type safe which can cause object slicing and crashes. For type checking there are multiple ways of doing this(however you want honestly) two common ways are:
+- Gameplay Tag(s): You can use a subclass hierarchy where you know that anytime a ceratain code architcture's functionality occurs, you can cast for the base parent type and get its gameplay tag(s) and then compare against those for casting for inherited classes.
+- Script Struct & Static Structs: You can instead do direct class comparison(which can involve a lot of IF statements or making some template functions), below is an example of doing this but basically you can get the script struct from any `FGameplayAbilityTargetData`(this is a nice advantage of it being a `USTRUCT` and requiring any inherited classes to specify the struct type in `GetScriptStruct`) and compare if its the type you're looking for. Below is an example of using these functions for type checking:
+```c++
+UFUNCTION(BlueprintPure)
+FName GetCoolNameFromTargetData(const FGameplayAbilityTargetDataHandle& Handle, const int Index)
+{   
+    // NOTE, there is two versions of this '::Get(int32 Index)' function; 
+    // 1) const version that returns 'const FGameplayAbilityTargetData*', good for reading target data values 
+    // 2) non-const version that returns 'FGameplayAbilityTargetData*', good for modifying target data values
+    FGameplayAbilityTargetData* Data = Handle.Get(Index); // This will valid check the index for you 
+    
+    // Valid check we have something to use, null data means nothing to cast for
+    if(Data == nullptr)
+    {
+       	return NAME_None;
+    }
+    // This is basically the type checking pass, static_cast does not have type safety, this is why we do this check.
+    // If we don't do this then it will object slice the struct and thus we have no way of making sure its that type.
+    if(Data->GetScriptStruct() == FGameplayAbilityTargetData_CustomData::StaticStruct())
+    {
+       	return NAME_None;
+    }
+    // Here is when you would do the cast because we know its the correct type already
+    FGameplayAbilityTargetData_CustomData* CustomData = static_cast<FGameplayAbilityTargetData_CustomData*>(Data);    
+    return CustomData->CoolName;
+}
+```
+
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-targeting-actors"></a>
@@ -3057,6 +3153,34 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 What's happening is that `WITH_PUSH_MODEL` is getting defined in more than one place. `PushModelMacros.h` is defining it as 0 while it's defined as 1 in multiple places. `PushModel.h` is seeing it as 1 but `PushModel.cpp` is seeing it as 0.
 
 The solution is to add `NetCore` to your project's `PublicDependencyModuleNames` in the `Build.cs`.
+
+**[⬆ Back to Top](#table-of-contents)**
+
+<a name="troubleshooting-enumnamesarenowpathnames"></a>
+### 9.6 Enum names are now represented by path name
+
+If you get a compiler warning like:
+
+```
+warning C4996: 'FGameplayAbilityInputBinds::FGameplayAbilityInputBinds': Enum names are now represented by path names. Please use a version of FGameplayAbilityInputBinds constructor that accepts FTopLevelAssetPath. Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+```
+
+UE 5.1 deprecated using `FString` in the constructor for `BindAbilityActivationToInputComponent()`. Instead, we must pass in an `FTopLevelAssetPath`.
+
+Old, deprecated way:
+```
+AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), FString("EGDAbilityInputID"), static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+```
+
+New way:
+```
+FTopLevelAssetPath AbilityEnumAssetPath = FTopLevelAssetPath(FName("/Script/GASDocumentation"), FName("EGDAbilityInputID"));
+AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), AbilityEnumAssetPath, static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+```
+
+See `Engine\Source\Runtime\CoreUObject\Public\UObject\TopLevelAssetPath.h` for more info.
 
 **[⬆ Back to Top](#table-of-contents)**
 
