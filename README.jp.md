@@ -155,6 +155,7 @@
 >    9.3 [Animation Montages are not replicating to clients](#troubleshooting-replicatinganimmontages)  
 >    9.4 [Duplicating Blueprint Actors is setting AttributeSets to nullptr ( Blueprint のアクターを複製すると、AttributeSets が nullptr に設定される)](#troubleshooting-duplicatingblueprintactors)  
 >    9.5 [unresolved external symbol UEPushModelPrivate::MarkPropertyDirty(int,int)](#troubleshooting-unresolvedexternalsymbolmarkpropertydirty)  
+>    9.6 [Enum names are now represented by path name](#troubleshooting-enumnamesarenowpathnames)  
 > 1. [Common GAS Acronyms （一般的な GAS の頭字語）](#acronyms)  
 > 1. [Other Resources](#resources)  
 >    11.1 [Q&A With Epic Game's Dave Ratti](#resources-daveratti)  
@@ -1984,7 +1985,9 @@ enum class EGDAbilityInputID : uint8
 もし `ASC` が `Character` にある場合、 `SetupPlayerInputComponent()` が、 `ASC` にバインドするための機能を含んでいます :
 ```c++
 // Bind to AbilitySystemComponent
-AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"), FString("CancelTarget"), FString("EGDAbilityInputID"), static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+FTopLevelAssetPath AbilityEnumAssetPath = FTopLevelAssetPath(FName("/Script/GASDocumentation"), FName("EGDAbilityInputID"));
+AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), AbilityEnumAssetPath, static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
 ```
 
 `ASC` が `PlayerState` にある場合、 `SetupPlayerInputComponent()` には潜在的に race condition （競争状態）があり、 `PlayerState` がまだクライアントへレプリケーションされていない可能性があります。 したがって、`SetupPlayerInputComponent()` と `OnRep_PlayerState()` で入力をバインドすることを試みるのをおすすめします。 `OnRep_PlayerState()` だけでは十分ではありません。 なぜなら「 `PlayerController` がクライアントに（ `InputComponent` を作成する） `ClientRestart()` を呼ぶ様に伝えるより先に `PlayerState` がレプリケーションした際」、 `Actor` の `InputComponent` が null になる可能性があるからです。 サンプルプロジェクトでは、「 bool 値でプロセスをゲーティングしたうえで、両方の場所でバインドを試み、実際には入力を一度だけバインドする」ということを実践してみせています。
@@ -2900,6 +2903,104 @@ Epic は近頃、`CharacterMovementComponent` を新しい `Network Prediction` 
 
 通常は、 `FGameplayAbilityTargetData` を直接渡さず、かわりに [`FGameplayAbilityTargetDataHandle`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/FGameplayAbilityTargetDataHandle/index.html) を使います。 これは内部に `FGameplayAbilityTargetData` へのポインターの TArray を所持しています。 これは、 `TargetData` のポリモーフィズムのサポートを提供する中間の構造体です。
 
+`FGameplayAbilityTargetData`` を継承した例です：
+```c++
+USTRUCT(BlueprintType)
+struct MYGAME_API FGameplayAbilityTargetData_CustomData : public FGameplayAbilityTargetData
+{
+	GENERATED_BODY()
+public:
+
+	FGameplayAbilityTargetData_CustomData()
+	{ }
+
+	UPROPERTY()
+	FName CoolName = NAME_None;
+
+	UPROPERTY()
+	FPredictionKey MyCoolPredictionKey;
+
+	// This is required for all child structs of FGameplayAbilityTargetData
+	// FGameplayAbilityTargetData のすべての子構造体に対して必要である。
+	virtual UScriptStruct* GetScriptStruct() const override
+	{
+		return FGameplayAbilityTargetData_CustomData::StaticStruct();
+	}
+
+	// FGameplayAbilityTargetData のすべての子構造体に対して必要である。
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+	{
+		// エンジンはすでに FName と FPredictionKey のために NetSerialize を定義しています、ありがとう Epic!
+		CoolName.NetSerialize(Ar, Map, bOutSuccess);
+		MyCoolPredictionKey.NetSerialize(Ar, Map, bOutSuccess);
+		bOutSuccess = true;
+		return true;
+	}
+}
+
+template<>
+struct TStructOpsTypeTraits<FGameplayAbilityTargetData_CustomData> : public TStructOpsTypeTraitsBase2<FGameplayAbilityTargetData_CustomData>
+{
+	enum
+	{
+		WithNetSerializer = true // これは、 FGameplayAbilityTargetDataHandle のネットシリアライゼーションが動作するために必要なものです。
+	};
+};
+```
+対象データをハンドルに追加する場合：
+```c++
+UFUNCTION(BlueprintPure)
+FGameplayAbilityTargetDataHandle MakeTargetDataFromCustomName(const FName CustomName)
+{
+	// ターゲットデータ型を作成します。
+	// ハンドルは、ハンドルが破壊されたときにこのデータを自動的にクリーンアップして削除しますが、
+	// もしこれをハンドルに追加しない場合は注意が必要です。
+	// なぜなら、これはメモリ管理とメモリリークを扱うからです。
+	// したがって、フレーム内のある時点で常にハンドルに追加しておけば安全です！
+	FGameplayAbilityTargetData_CustomData* MyCustomData = new FGameplayAbilityTargetData_CustomData();
+	// 入力された名前を使用するように構造体の情報を設定し、その他に必要な変更を行う。
+	MyCustomData->CoolName = CustomName;
+
+	// ブループリントを使用するためのハンドルラッパーを作成します。
+	FGameplayAbilityTargetDataHandle Handle;
+	// ターゲットデータをハンドルに追加します。
+	Handle.Add(MyCustomData);
+	// ブループリントにハンドルを出力する
+	return Handle
+}
+```
+
+値を取得するためには、型安全性のチェックが必要です。  
+なぜなら、ハンドルのターゲットデータから値を取得する唯一の方法は、型安全 *ではない* 一般的な「C/C++」キャストを使用することであり、オブジェクトスライスやクラッシュを引き起こす可能性があるからです。  
+型チェックには複数の方法があり(正直に言えば)、一般的な方法は次の 2 つです：
+- Gameplay Tag(s): サブクラス階層を使用して、特定のコードアーキテクチャの機能が発生したときにいつでも、ベースの親タイプをキャストしてその Gameplay Tag(s) を取得し、それらを比較して継承されたクラスにキャストできるようにすることができます。
+- スクリプト構造体と静的構造体: 下記はその例ですが、基本的には任意の `FGameplayAbilityTargetData` からスクリプト構造体を取得し（これは `USTRUCT` であることの素晴らしい利点で、継承したクラスは `GetScriptStruct` で構造体の型を指定しなければなりません）、探している型かどうかを比較することが可能です。 以下は、これらの関数を使用して型チェックを行う例です：
+```c++
+UFUNCTION(BlueprintPure)
+FName GetCoolNameFromTargetData(const FGameplayAbilityTargetDataHandle& Handle, const int Index)
+{
+ 	// NOTE, この '::Get(int32 Index)' 関数には、2つのバージョンがあります。
+	// 1) 'const FGameplayAbilityTargetData*'を返す const 版。 ターゲットデータの値を読むのに適しています。
+	// 2) 'FGameplayAbilityTargetData*'を返す非 const バージョン。 ターゲットデータの値を変更するのに適しています。
+	FGameplayAbilityTargetData* Data = Handle.Get(Index); // これでインデックスが有効であることを確認できます。
+
+	// 使用するものがあるかどうか有効なチェックができ、ヌルデータはキャストするものがないことを意味します
+	if(Data == nullptr)
+	{
+		return NAME_None;
+	}
+	// これは基本的に型チェックのパスで、static_castには型安全性がないので、このようなチェックを行っています。
+	// このチェックを行わないと、構造体をオブジェクトスライスしてしまうので、その型であることを確認する方法がありません。
+	if(Data->GetScriptStruct() == FGameplayAbilityTargetData_CustomData::StaticStruct())
+	{
+		// ここでは、すでに正しい型であることが分かっているため、キャストを行います。
+		FGameplayAbilityTargetData_CustomData* CustomData = static_cast<FGameplayAbilityTargetData_CustomData*>(Data);    
+		return CustomData->CoolName;
+	}
+	return NAME_None;
+}
+```
+
 
 **[⬆ Back to Top](#table-of-contents)**
 
@@ -3422,6 +3523,38 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 解決策は、 `Build.cs` の `PublicDependencyModuleNames` に `NetCore` を追加することです。
 
 **[⬆ Back to Top](#table-of-contents)**
+
+<a name="troubleshooting-enumnamesarenowpathnames"></a>
+
+### 9.6 Enum names are now represented by path name
+
+以下のようなコンパイラの警告が表示された場合：
+
+```
+warning C4996: 'FGameplayAbilityInputBinds::FGameplayAbilityInputBinds': Enum names are now represented by path names. Please use a version of FGameplayAbilityInputBinds constructor that accepts FTopLevelAssetPath. Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+```
+
+UE 5.1 では、`BindAbilityActivationToInputComponent()` のコンストラクタで `FString` を使用することは非推奨となりました。その代わりに、`FTopLevelAssetPath` を渡す必要があります。
+
+古い、非推奨の方法：
+
+```c++
+AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), FString("EGDAbilityInputID"), static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+```
+
+新しい方法：
+
+```c++
+FTopLevelAssetPath AbilityEnumAssetPath = FTopLevelAssetPath(FName("/Script/GASDocumentation"), FName("EGDAbilityInputID"));
+AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), AbilityEnumAssetPath, static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+```
+
+詳細は `Engine\Source\Runtime\CoreUObject\Public\UObject\TopLevelAssetPath.h` を参照してください。
+
+**[⬆ Back to Top](#table-of-contents)**
+
 
 <a name="acronyms"></a>
 
