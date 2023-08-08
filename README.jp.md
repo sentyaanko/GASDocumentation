@@ -4,7 +4,7 @@
 
 このドキュメントの目的は、 GAS の主要な概念とクラスを説明し、 GAS での私の経験に基づいていくつかの追加の解説を提供することです。 コミュニティのユーザーの間には GAS の「仲間内の智恵（tribal knowledge）」がたくさんあり、私はここでの私の全てを共有することを目指しています。
 
-サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.1** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
+サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.2** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
 
 [GASShooter](https://github.com/tranek/GASShooter) は、マルチプレイヤー FPS/TPS 向けの GAS を使用した高度なテクニックを示す姉妹サンプルプロジェクトです。
 
@@ -83,6 +83,7 @@
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.3 [Granting Abilities （付与）](#concepts-ga-granting)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.4 [Activating Abilities （Abilities の有効化）](#concepts-ga-activating)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.4.1 [Passive Abilities （パッシブ Abilities）](#concepts-ga-activating-passive)  
+>    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.4.2 [Activation Failed Tags](#concepts-ga-activating-failedtags)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.5 [Canceling Abilities （Abilities のキャンセル）](#concepts-ga-cancelabilities)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.6 [Getting Active Abilities （有効な Abilities の入手）](#concepts-ga-definition-activeability)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6.7 [Instancing Policy （インスタンス化ポリシー）](#concepts-ga-instancing)  
@@ -162,6 +163,7 @@
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.1 [Community Questions 1](#resources-daveratti-community1)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.2 [Community Questions 2](#resources-daveratti-community2)  
 > 1. [GAS Changelog](#changelog)  
+>    * [5.2](#changelog-5.2)  
 >    * [5.1](#changelog-5.1)  
 >    * [5.0](#changelog-5.0)  
 >    * [4.27](#changelog-4.27)  
@@ -2164,6 +2166,43 @@ Epic はこの関数を「パッシブアビリティを開始し、 `BeginPlay`
 
 **[⬆ Back to Top](#table-of-contents)**
 
+<a name="concepts-ga-activating-failedtags"></a>
+
+##### 4.6.4.2 Activation Failed Tags
+
+Abilities have default logic to tell you why an ability activation failed. To enable this, you must set up the GameplayTags that correspond to the default failure cases.
+
+Add these tags (or your own naming convention) to your project:
+```
++GameplayTagList=(Tag="Activation.Fail.BlockedByTags",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.CantAffordCost",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.IsDead",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.MissingTags",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.Networking",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.OnCooldown",DevComment="")
+```
+
+Then add them to the [`GASDocumentation\Config\DefaultGame.ini`](https://github.com/tranek/GASDocumentation/blob/master/Config/DefaultGame.ini#L8-L13):
+```
+[/Script/GameplayAbilities.AbilitySystemGlobals]
+ActivateFailIsDeadName=Activation.Fail.IsDead
+ActivateFailCooldownName=Activation.Fail.OnCooldown
+ActivateFailCostName=Activation.Fail.CantAffordCost
+ActivateFailTagsBlockedName=Activation.Fail.BlockedByTags
+ActivateFailTagsMissingName=Activation.Fail.MissingTags
+ActivateFailNetworkingName=Activation.Fail.Networking
+```
+
+Now whenever an ability activation fails, this corresponding GameplayTag will be included in output log messages or visible on the `showdebug AbilitySystem` hud.
+```
+LogAbilitySystem: Display: InternalServerTryActivateAbility. Rejecting ClientActivation of Default__GA_FireGun_C. InternalTryActivateAbility failed: Activation.Fail.BlockedByTags
+LogAbilitySystem: Display: ClientActivateAbilityFailed_Implementation. PredictionKey :109 Ability: Default__GA_FireGun_C
+```
+
+![Activation Failed Tags Displayed in showdebug AbilitySystem](https://github.com/tranek/GASDocumentation/raw/master/Images/activationfailedtags.png)
+
+**[⬆ Back to Top](#table-of-contents)**
+
 <a name="concepts-ga-cancelabilities"></a>
 
 #### 4.6.5 Canceling Abilities （Abilities のキャンセル）
@@ -3254,15 +3293,15 @@ if (SpecAssetTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Damage.C
 
 GAS は実行時にこれらの質問に答えるための２つの手法が付属しています - [`showdebug abilitysystem`](#debugging-sd) と [`GameplayDebugger`](#debugging-gd) の中でのフックです。
 
-**Tip:** UE5 は C++ のコードを最適化するのが好きなので、いくつかの関数のデバッグが困難になります。 コードを深くトレースしている時、これに遭遇するのはまれです。 Visual Studio solution の設定を `DebugGame Editor` に設定してもコードのトレースと値のインスペクトが困難の場合、最適化された関数を `PRAGMA_DISABLE_OPTIMIZATION_ACTUAL` と `PRAGMA_ENABLE_OPTIMIZATION_ACTUAL` マクロでラッピングすることですべての最適化を無効化できます。 プラグインをソースからリビルドするまで、これをプラグインコードで使用することはできません。 これは、インライン関数では、何をしていて何処にあるかに応じて、機能する場合としない場合があります。 デバッグが完了したら必ずマクロを削除してください！
+**Tip:** Unreal Engine は C++ のコードを最適化するのが好きなので、いくつかの関数のデバッグが困難になります。 コードを深くトレースしている時、これに遭遇するのはまれです。 Visual Studio solution の設定を `DebugGame Editor` に設定してもコードのトレースと値のインスペクトが困難の場合、最適化された関数を `PRAGMA_DISABLE_OPTIMIZATION_ACTUAL` と `PRAGMA_ENABLE_OPTIMIZATION_ACTUAL` マクロでラッピングすることですべての最適化を無効化できます。 プラグインをソースからリビルドするまで、これをプラグインコードで使用することはできません。 これは、インライン関数では、何をしていて何処にあるかに応じて、機能する場合としない場合があります。 デバッグが完了したら必ずマクロを削除してください！
 
 ```c++
-PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
+UE_DISABLE_OPTIMIZATION
 void MyClass::MyFunction(int32 MyIntParameter)
 {
 	// My code
 }
-PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
+UE_ENABLE_OPTIMIZATION
 ```
 
 **[⬆ Back to Top](#table-of-contents)**
@@ -3282,7 +3321,13 @@ PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
 三番目のページは、すべての付与された `GameplayAbilities` と、それらが実行されているかどうかと、それらが有効化からブロックされているかどうかと、現在実行中の `AbilityTasks` の状態が表示されます。
 ![Third Page of showdebug abilitysystem](https://github.com/tranek/GASDocumentation/raw/master/Images/showdebugpage3.png)
 
-`PageUp` と `PageDown` により、ターゲットを循環できますが、ページは、あなたのローカルでコントロールされている `Character` の `ASC` のデータだけが表示されます。 しかしながら、 `AbilitySystem.Debug.NextTarget` と `AbilitySystem.Debug.PrevTarget` を使うことで、他の `ASCs` のデータも表示されます。 ですが、上半分のデバッグ情報は更新されませんし、緑色のターゲティング用の長方形の角柱も更新されませんので、どの `ASC` が現在ターゲットされているのか知る方法がありません。 このバグは既に報告されています。 https://issues.unrealengine.com/issue/UE-90437
+To cycle between targets (denoted by a green rectangular prism around the Actor), use the `PageUp` key or `NextDebugTarget` console command to go to the next target and the `PageDown` key or `PreviousDebugTarget` console command to go to the previous target.
+
+**Note:** In order for the ability system information to update based on the currently selected debug Actor, you need to set `bUseDebugTargetFromHud=true` in the `AbilitySystemGlobals` like so in the `DefaultGame.ini`:
+```
+[/Script/GameplayAbilities.AbilitySystemGlobals]
+bUseDebugTargetFromHud=true
+```
 
 **Note:** `showdebug abilitysystem` を機能させるためには、 GameMode で、現在の HUD クラスを選択する必要があります。 さもないと、コマンドが見つからず、「 Unknown Command 」が返されます。
 
@@ -3924,6 +3969,28 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 
 これは「公式の Unreal Engine の更新変更ログ」と「私が遭遇したドキュメント化されていない変更」から集めた、 GAS の注目すべき変更（修正、変更、そして新しい機能）のリストです。 もしあなたがここに記載されていないなにかを見つけたならば、 issue を作成するか、プルリクエストを行ってください。
 
+<a name="changelog-5.2"></a>
+### 5.2
+* Bug Fix: Fixed a crash in the `UAbilitySystemBlueprintLibrary::MakeSpecHandle` function.
+* Bug Fix: Fixed logic in the Gameplay Ability System where a non-Controlled Pawn would be considered remote, even if it was spawned locally on the server (e.g. Vehicles).
+* Bug Fix: Correctly set activation info on predicted instanced abilities that were rejected by the server.
+* Bug Fix: Fixed a bug that would cause GameplayCues to get stuck on remote instances.
+* Bug Fix: Fixed a memory stomp when chaining calls to WaitGameplayEvent.
+* Bug Fix: Calling the AbilitySystemComponent `GetOwnedGameplayTags()` function in Blueprint no longer retains the previous call's return values when the same node is executed multiple times.
+* Bug Fix: Fixed an issue with GameplayEffectContext replicating a reference to a dynamic object that would never be replicated.
+  * This prevented GameplayEffect from calling `Owner->HandleDeferredGameplayCues(this)` as `bHasMoreUnmappedReferences` would always be true.
+* New: The [Gameplay Targeting System](https://docs.unrealengine.com/en-US/gameplay-targeting-system-in-unreal-engine/) is a way to create data-driven targeting requests.
+* New: Added custom serialization support for GameplayTag Queries.
+* New: Added support for replicating derived FGameplayEffectContext types.
+* New: Gameplay Attributes in assets are now registered as searchable names on save, allowing for references to attributes to be seen in the reference viewer.
+* New: Added some basic unit tests for the AbilitySystemComponent.
+* New: Gameplay Ability System Attributes now respect Core Redirects. This means you can now rename Attribute Sets and their Attributes in code and have them load properly in assets saved with the old names by adding redirect entries to DefaultEngine.ini.
+* Change: Allow changing the evaluation channel of a Gameplay Effect Modifier from code.
+* Change: Removed previously unused variable `FGameplayModifierInfo::Magnitude` from the Gameplay Abilities Plugin.
+* Change: Removed the synchronization logic between the ability system component and Smart Object instance tags.
+
+https://docs.unrealengine.com/5.2/en-US/unreal-engine-5.2-release-notes/
+
 <a name="changelog-5.1"></a>
 ### 5.1
 * Bug Fix: Fixed issue where replicated loose gameplay tags were not replicating to the owner.
@@ -4043,8 +4110,8 @@ https://docs.unrealengine.com/en-US/WhatsNew/Builds/ReleaseNotes/4_25/
 * `UGameplayAbility::MontageStop()` function now properly uses the `OverrideBlendOutTime` parameter.
 * Fixed `GameplayTag` query variables on components not being modified when edited.
 * Added the ability for `GameplayEffectExecutionCalculations` to support scoped modifiers against "temporary variables" that aren't required to be backed by an attribute capture.
-   * Implementation basically enables `GameplayTag`-identified aggregators to be created as a means for an execution to expose a temporary value to be manipulated with scoped modifiers; you can now build formulas that want manipulatable values that don't need to be captured from a source or target.
-   * To use, an execution has to add a tag to the new member variable `ValidTransientAggregatorIdentifiers`; those tags will show up in the calculation modifier array of scoped mods at the bottom, marked as temporary variables—with updated details customizations accordingly to support feature
+  * Implementation basically enables `GameplayTag`-identified aggregators to be created as a means for an execution to expose a temporary value to be manipulated with scoped modifiers; you can now build formulas that want manipulatable values that don't need to be captured from a source or target.
+  * To use, an execution has to add a tag to the new member variable `ValidTransientAggregatorIdentifiers`; those tags will show up in the calculation modifier array of scoped mods at the bottom, marked as temporary variables—with updated details customizations accordingly to support feature
 * Added restricted tag quality-of-life improvements. Removed the default option for restricted `GameplayTag` source. We no longer reset the source when adding restricted tags to make it easier to add several in a row. 
 * `APawn::PossessedBy()` now sets the owner of the `Pawn` to the new `Controller`. Useful because [Mixed Replication Mode](#concepts-asc-rm) expects the owner of the `Pawn` to be the `Controller` if the `ASC` lives on the `Pawn`.
 * Fixed bug with POD (Plain Old Data) in `FAttributeSetInitterDiscreteLevels`.
