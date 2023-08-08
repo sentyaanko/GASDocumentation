@@ -2170,9 +2170,9 @@ Epic はこの関数を「パッシブアビリティを開始し、 `BeginPlay`
 
 ##### 4.6.4.2 Activation Failed Tags
 
-Abilities have default logic to tell you why an ability activation failed. To enable this, you must set up the GameplayTags that correspond to the default failure cases.
+アビリティには起動に失敗した理由を伝えるデフォルトのロジックがあります。これを有効にするにはデフォルトの失敗ケースに対応する GameplayTags を設定する必要があります。
 
-Add these tags (or your own naming convention) to your project:
+これらのタグ (又は独自の命名規則) をプロジェクトに追加します :
 ```
 +GameplayTagList=(Tag="Activation.Fail.BlockedByTags",DevComment="")
 +GameplayTagList=(Tag="Activation.Fail.CantAffordCost",DevComment="")
@@ -2182,7 +2182,7 @@ Add these tags (or your own naming convention) to your project:
 +GameplayTagList=(Tag="Activation.Fail.OnCooldown",DevComment="")
 ```
 
-Then add them to the [`GASDocumentation\Config\DefaultGame.ini`](https://github.com/tranek/GASDocumentation/blob/master/Config/DefaultGame.ini#L8-L13):
+次に、これらのタグを [`GASDocumentation\Config\DefaultGame.ini`](https://github.com/tranek/GASDocumentation/blob/master/Config/DefaultGame.ini#L8-L13) に追加します :
 ```
 [/Script/GameplayAbilities.AbilitySystemGlobals]
 ActivateFailIsDeadName=Activation.Fail.IsDead
@@ -2193,7 +2193,7 @@ ActivateFailTagsMissingName=Activation.Fail.MissingTags
 ActivateFailNetworkingName=Activation.Fail.Networking
 ```
 
-Now whenever an ability activation fails, this corresponding GameplayTag will be included in output log messages or visible on the `showdebug AbilitySystem` hud.
+これで、アビリティの起動に失敗するたびに、対応する GameplayTag がログメッセージに表示されたり、 `showdebug AbilitySystem` hud に表示されるようになります。
 ```
 LogAbilitySystem: Display: InternalServerTryActivateAbility. Rejecting ClientActivation of Default__GA_FireGun_C. InternalTryActivateAbility failed: Activation.Fail.BlockedByTags
 LogAbilitySystem: Display: ClientActivateAbilityFailed_Implementation. PredictionKey :109 Ability: Default__GA_FireGun_C
@@ -3321,9 +3321,10 @@ UE_ENABLE_OPTIMIZATION
 三番目のページは、すべての付与された `GameplayAbilities` と、それらが実行されているかどうかと、それらが有効化からブロックされているかどうかと、現在実行中の `AbilityTasks` の状態が表示されます。
 ![Third Page of showdebug abilitysystem](https://github.com/tranek/GASDocumentation/raw/master/Images/showdebugpage3.png)
 
-To cycle between targets (denoted by a green rectangular prism around the Actor), use the `PageUp` key or `NextDebugTarget` console command to go to the next target and the `PageDown` key or `PreviousDebugTarget` console command to go to the previous target.
+ターゲット (アクターの周りに緑色の四角いプリズムで示される) を循環させるには、 `PageUp` キーまたは `NextDebugTarget` コンソールコマンドを使用することで次のターゲットに移動でき、 `PageDown` キーまたは `PreviousDebugTarget` コンソールコマンドを使用することで前のターゲットに移動できます。
 
-**Note:** In order for the ability system information to update based on the currently selected debug Actor, you need to set `bUseDebugTargetFromHud=true` in the `AbilitySystemGlobals` like so in the `DefaultGame.ini`:
+**Note:** アビリティシステムの情報を現在選択されているデバッグアクターに基づいて更新するためには、 `DefaultGame.ini` で以下のように `AbilitySystemGlobals` の `bUseDebugTargetFromHud=true` を設定する必要があります :
+
 ```
 [/Script/GameplayAbilities.AbilitySystemGlobals]
 bUseDebugTargetFromHud=true
