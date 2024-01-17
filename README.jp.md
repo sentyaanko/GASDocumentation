@@ -4,7 +4,7 @@
 
 このドキュメントの目的は、 GAS の主要な概念とクラスを説明し、 GAS での私の経験に基づいていくつかの追加の解説を提供することです。 コミュニティのユーザーの間には GAS の「仲間内の智恵（tribal knowledge）」がたくさんあり、私はここでの私の全てを共有することを目指しています。
 
-サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.2** で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。
+サンプルプロジェクトとドキュメントは、 **Unreal Engine 5.3** (UE5) で最新のものです。 Unreal Engine の古いバージョン用にこのドキュメントのブランチがありますが、それらはサポートされなくなり、バグや古い情報が含まれる可能性があります。 あなたのエンジンのバージョンに合ったブランチを使用してください。
 
 [GASShooter](https://github.com/tranek/GASShooter) は、マルチプレイヤー FPS/TPS 向けの GAS を使用した高度なテクニックを示す姉妹サンプルプロジェクトです。
 
@@ -23,6 +23,7 @@
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.1.2 [セットアップと初期化](#concepts-asc-setup)  
 >    4.2 [Gameplay Tags](#concepts-gt)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.2.1 [Gameplay Tags の変更への対応](#concepts-gt-change)  
+>    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.2.2 [Loading Gameplay Tags from Plugin .ini Files](#concepts-gt-loadfromplugin)  
 >    4.3 [Attributes](#concepts-a)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.3.1 [Attribute の定義](#concepts-a-definition)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.3.2 [BaseValue vs CurrentValue](#concepts-a-value)  
@@ -163,6 +164,7 @@
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.1 [Community Questions 1](#resources-daveratti-community1)  
 >    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11.1.2 [Community Questions 2](#resources-daveratti-community2)  
 > 1. [GAS Changelog](#changelog)  
+>    * [5.3](#changelog-5.3)  
 >    * [5.2](#changelog-5.2)  
 >    * [5.1](#changelog-5.1)  
 >    * [5.0](#changelog-5.0)  
@@ -179,7 +181,7 @@
 [公式ドキュメント](https://docs.unrealengine.com/en-US/Gameplay/GameplayAbilitySystem/index.html) （[日本語版](https://docs.unrealengine.com/ja/InteractiveExperiences/GameplayAbilitySystem/index.html)） から :
 >ゲーム アビリティ システム は、 RPG や MOBA タイトルで使用される能力やアトリビュート の構築のための柔軟性の高いフレームワークです。ゲーム内で使用するアクションやパッシブ アビリティ、これらのアクションの結果としてさまざまなアトリビュートを作成または消耗させるステータス エフェクトを構築したり、これらのアクションの使用を制御するための「クールダウン」タイマーあるいはリソース コストの実装をしたり、各レベルでの能力とその効果のレベルを変更したり、パーティクルやサウンドエフェクトなどをアクティベートすることができます。簡単に言えば、このシステムは、近年の RPG や MOBA タイトルに組み込まれているジャンプのように単純なものから、お気に入りのキャラクターのアビリティと同じくらい複雑なゲーム アビリティの設計、実装および効率の良いネットワーク化を容易にします。
 
-GameplayAbilitySystem プラグインは Epic Games によって開発され、 Unreal Engine 5 (UE5) に付属しています。 Paragon や Fortnite などの AAA商用ゲームでバトルテストが行われています。
+GameplayAbilitySystem プラグインは Epic Games によって開発され、 Unreal Engine に付属しています。 Paragon や Fortnite などの AAA商用ゲームでバトルテストが行われています。
 
 プラグインは、以下のシングル及びマルチプレイヤーゲームですぐに使用できるソリューションを提供します :
 * コストとクールダウンのオプションがあるレベルベースのキャラクターアビリティまたはスキルの実装 ([GameplayAbilities](#concepts-ga))
@@ -210,7 +212,7 @@ GAS の現在の課題 :
 
 ## 2. サンプルプロジェクト
 
-このドキュメントには、 GameplayAbilitySystem プラグインは初めてではあるが、 Unreal Engine 5 は利用したことがある人々を対象とした、マルチプレイヤーサードパーソンシューティングのサンプルプロジェクトが含まれています。ユーザー（プロジェクトの利用者）は UE5 の C++、ブループリント、UMG、レプリケーション、及びその他の中級トピックの知識が必要です。このプロジェクトでは、初歩的なサードパーソンシューティングのマルチプレイヤー対応プロジェクトを、プレイヤー/AI に制御されたヒーロー用のクラス `PlayerState` に `AbilitySystemComponent` (`ASC`) を、同様に、 AI に制御されたミニオン用のクラス `Character` に `ASC` を、それぞれセットアップする方法の例を提供します。
+このドキュメントには、 GameplayAbilitySystem プラグインは初めてではあるが、 Unreal Engine は利用したことがある人々を対象とした、マルチプレイヤーサードパーソンシューティングのサンプルプロジェクトが含まれています。ユーザー（プロジェクトの利用者）は UE の C++、ブループリント、UMG、レプリケーション、及びその他の中級トピックの知識が必要です。このプロジェクトでは、初歩的なサードパーソンシューティングのマルチプレイヤー対応プロジェクトを、プレイヤー/AI に制御されたヒーロー用のクラス `PlayerState` に `AbilitySystemComponent` (`ASC`) を、同様に、 AI に制御されたミニオン用のクラス `Character` に `ASC` を、それぞれセットアップする方法の例を提供します。
 
 このプロジェクトの目標は、このプロジェクトを単純に保ちつつ、 GAS の基本を示し、しばしば求められるアビリティをよくコメントされたコードで示すことです。初心者向けの為、高度なトピック、例えば [投射物の predicting （予測）](#concepts-p-spawn) のようなものは紹介していません。
 
@@ -443,7 +445,7 @@ void AGDHeroCharacter::OnRep_PlayerState()
 `FGameplayTagCountContainer` に格納されている `GameplayTags` は `GameplayTag` のインスタンス数を格納する `TagMap` を所持しています。 `FGameplayTagCountContainer` にはまだ `GameplayTag` が含まれているにもかかわらず `TagMapCount` はゼロかもしれません。 デバッグ中、 `ASC` にまだ `GameplayTag` が残っていると、この現象に遭遇する可能性があります。 `HasTag()` や `HasMatchingTag()` やその他同様の関数は、いずれも `TagMapCount` をチェックし、 `GameplayTag` が存在しない、または `TagMapCount` がゼロの場合は false を返します。
 
 > Translators notes:SentyaAnko  
-> このあたり、 UE5 のソース内で該当のコードを見つけることができません。  
+> このあたり、 UE のソース内で該当のコードを見つけることができません。  
 > 翻訳が正しくないか、原文がなにか古い情報をもとにしている可能性があります。  
 > 具体的には、FGameplayTagCountContainer や FGameplayTags に TagMap や TagMapCount という変数や関数がありません。  
 >  
@@ -453,7 +455,7 @@ void AGDHeroCharacter::OnRep_PlayerState()
 > HasTag() -> 該当なし  
 > HasMatchingTag() -> HasMatchingGameplayTag()  
 
-`GameplayTags` は `DefaultGameplayTags.ini` にて事前に定義する必要があります。 UE5 エディターはプロジェクト設定にインターフェイスを提供しており、開発者は `DefaultGameplayTags.ini` を手動編集せずに `GameplayTags` を管理できます。 `GameplayTag` エディターは `GameplayTags` の作成、名前変更、参照の検索、及び削除を行うことができます。
+`GameplayTags` は `DefaultGameplayTags.ini` にて事前に定義する必要があります。 Unreal Engine エディターはプロジェクト設定にインターフェイスを提供しており、開発者は `DefaultGameplayTags.ini` を手動編集せずに `GameplayTags` を管理できます。 `GameplayTag` エディターは `GameplayTags` の作成、名前変更、参照の検索、及び削除を行うことができます。
 
 ![GameplayTag Editor in Project Settings](https://github.com/tranek/GASDocumentation/raw/master/Images/gameplaytageditor.png)
 
@@ -503,6 +505,31 @@ virtual void StunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-a"></a>
+
+<a name="concepts-gt-loadfromplugin"></a>
+
+### 4.2.2 Loading Gameplay Tags from Plugin .ini Files
+
+独自の .ini ファイルを持つプラグインを `GameplayTags` で作成した場合、そのプラグインの `StartupModule()` 関数で `GameplayTag` を .ini ディレクトリから読み込むことができます。
+
+例えば、Unreal Engine に付属する CommonConversation プラグインはこのようにしています :
+
+```c++
+void FCommonConversationRuntimeModule::StartupModule()
+{
+	TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("CommonConversation"));
+	check(ThisPlugin.IsValid());
+	
+	UGameplayTagsManager::Get().AddTagIniSearchPath(ThisPlugin->GetBaseDir() / TEXT("Config") / TEXT("Tags"));
+
+	//...
+}
+```
+
+これは、プラグインが有効になっている場合、Engine の起動時に、ディレクトリ `Plugins\CommonConversation\Config\Tags` を検索し、`GameplayTags` が含まれる .ini ファイルをプロジェクトにロードします。
+
+**[⬆ Back to Top](#table-of-contents)**
+
 
 ### 4.3 Attributes
 
@@ -2115,7 +2142,7 @@ FGameplayAbilitySpecHandle GiveAbilityAndActivateOnce(const FGameplayAbilitySpec
 
 `GameplayAbility` の `Triggers` は `GameplayTag` の追加と削除の際の `GameplayAbility` の有効化も許可します。
 
-**Note:** ブループリントのイベントから `GameplayAbility` を有効化する時、 `ActivateAbilityFromEvent` ノードを使用しなければなりません。 標準の `ActivateAbility` ノードはグラフに **存在させられません** 。 `ActivateAbility` ノードが存在すると、常に `ActivateAbilityFromEvent` を介して呼び出されます。
+**Note:** ブループリントのイベントから `GameplayAbility` を有効化する時、 `ActivateAbilityFromEvent` ノードを使用しなければなりません。
 
 **Note:** パッシブアビリティのような、常に実行している `GameplayAbility` では無い限り、 `GameplayAbility` を終了させる際には `EndAbility()` を呼び出すのを忘れてはいけません。
 
@@ -2815,7 +2842,7 @@ Epic の考え方は、「やり過ごすことができる」ものだけを pr
 >    * GameplayTag の変更
 > * Gameplay Cue イベント（「 predictive （予測） gameplay effect の内側」と「それ自体」の両方から）
 > * モンタージュ
-> * 移動 （ UE5 に組み込まれている UCharacterMovement ）
+> * 移動 （ UE に組み込まれている UCharacterMovement ）
 
 **predicted （予測）されないもの :**
 > * GameplayEffect の削除
@@ -3969,6 +3996,53 @@ Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
 ## 12. GAS Changelog
 
 これは「公式の Unreal Engine の更新変更ログ」と「私が遭遇したドキュメント化されていない変更」から集めた、 GAS の注目すべき変更（修正、変更、そして新しい機能）のリストです。 もしあなたがここに記載されていないなにかを見つけたならば、 issue を作成するか、プルリクエストを行ってください。
+
+
+<a name="changelog-5.3"></a>
+### 5.3
+* Crash Fix: Fixed a crash when trying to apply Gameplay Cues after a seamless travel.
+* Crash Fix: Fixed a crash caused by GlobalAbilityTaskCount when using Live Coding.
+* Crash Fix: Fixed UAbilityTask::OnDestroy to not crash if called recursively for cases like UAbilityTask_StartAbilityState.
+* Bug Fix: It is now safe to call `Super::ActivateAbility` in a child class. Previously, it would call `CommitAbility`.
+* Bug Fix: Added support for properly replicating different types of FGameplayEffectContext.
+* Bug Fix: FGameplayEffectContextHandle will now check if data is valid before retrieving "Actors".
+* Bug Fix: Retain rotation for Gameplay Ability System Target Data LocationInfo.
+* Bug Fix: Gameplay Ability System now stops searching for PC only if a valid PC is found.
+* Bug Fix: Use existing GameplayCueParameters if it exists instead of default parameters object in RemoveGameplayCue_Internal.
+* Bug Fix: GameplayAbilityWorldReticle now faces towards the source Actor instead of the TargetingActor.
+* Bug Fix: Cache trigger event data if it was passed in with GiveAbilityAndActivateOnce and the ability list was locked.
+* Bug Fix: Support has been added for the FInheritedGameplayTags to update its CombinedTags immediately rather than waiting until a Save.
+* Bug Fix: Moved ShouldAbilityRespondToEvent from client-only code path to both server and client.
+* Bug Fix: Fixed FAttributeSetInitterDiscreteLevels from not working in Cooked Builds due to Curve Simplification.
+* Bug Fix: Set CurrentEventData in GameplayAbility.
+* Bug Fix: Ensure MinimalReplicationTags are set up correctly before potentially executing callbacks.
+* Bug Fix: Fixed ShouldAbilityRespondToEvent from not getting called on the instanced GameplayAbility.
+* Bug Fix: Gameplay Cue Notify Actors executing on Child Actors no longer leak memory when gc.PendingKill is disabled.
+* Bug Fix: Fixed an issue in GameplayCueManager where GameplayCueNotify_Actors could be 'lost' due to hash collisions.
+* Bug Fix: WaitGameplayTagQuery will now respect its Query even if we have no Gameplay Tags on the Actor.
+* Bug Fix: PostAttributeChange and AttributeValueChangeDelegates will now have the correct OldValue.
+* Bug Fix: Fixed FGameplayTagQuery from not showing a proper Query Description if the struct was created by native code.
+* Bug Fix: Ensure that the UAbilitySystemGlobals::InitGlobalData is called if the Ability System is in use. Previously if the user did not call it, the Gameplay Ability System did not function correctly.
+* Bug Fix: Fixed issue when linking/unlinking anim layers from UGameplayAbility::EndAbility.
+* Bug Fix: Updated Ability System Component function to check the Spec's ability pointer before use.
+* New: Added a GameplayTagQuery field to FGameplayTagRequirements to enable more complex requirements to be specified.
+* New: Introduced FGameplayEffectQuery::SourceAggregateTagQuery to augment SourceTagQuery.
+* New: Extended the functonality to execute and cancel Gameplay Abilities & Gameplay Effects from a console command.
+* New: Added the ability to perform an "Audit" on Gameplay Ability Blueprints that will show information on how they're developed and intended to be used.
+* Change: OnAvatarSet is now called on the primary instance instead of the CDO for instanced per Actor Gameplay Abilities.
+* Change: Allow both Activate Ability and Activate Ability From Event in the same Gameplay Ability Graph.
+* Change: AnimTask_PlayMontageAndWait now has a toggle to allow Completed and Interrupted after a BlendOut event.
+* Change: ModMagnitudeCalc wrapper functions have been declared const.
+* Change: FGameplayTagQuery::Matches now returns false for empty queries.
+* Change: Updated FGameplayAttribute::PostSerialize to mark the contained attribute as a searchable name.
+* Change: Updated GetAbilitySystemComponent to default parameter to Self.
+* Change: Marked functions as virtual in AbilityTask_WaitTargetData.
+* Change: Removed unused function FGameplayAbilityTargetData::AddTargetDataToGameplayCueParameters.
+* Change: Removed vestigial GameplayAbility::SetMovementSyncPoint.
+* Change: Removed unused replication flag from Gameplay tasks & Ability system components.
+* Change: Moved some gameplay effect functionality into optional components. All existing content will automatically update to use components during PostCDOCompiled, if necessary.
+
+https://docs.unrealengine.com/5.3/en-US/unreal-engine-5.3-release-notes/
 
 <a name="changelog-5.2"></a>
 ### 5.2
