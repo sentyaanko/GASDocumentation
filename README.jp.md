@@ -277,7 +277,7 @@ GAS を使用するプロジェクトを設定するための基本的な手順 
 1. エディタで GameplayAbilitySystem プラグインを有効にする
 1. `YourProjectName.Build.cs` を編集し、`PrivateDependencyModuleNames` に `"GameplayAbilities", "GameplayTags", "GameplayTasks"` を追加する
 1. Visual Studio プロジェクトファイルを更新/再生成する
-1. 4.24 以降、 [`TargetData`](#concepts-targeting-data) を利用する為には `UAbilitySystemGlobals::Get().InitGlobalData()` の呼び出しが必要になりました。 サンプルプロジェクトでは `UAssetManager::StartInitialLoading()` で行っています。 詳しくは [`InitGlobalData()`](#concepts-asg-initglobaldata) を参照してください。
+1. 4.24 から 5.2 までは、 [`TargetData`](#concepts-targeting-data) を利用する為には `UAbilitySystemGlobals::Get().InitGlobalData()` の呼び出しが必要です。 サンプルプロジェクトでは `UAssetManager::StartInitialLoading()` で行っています。 これは 5.3 から自動的に呼び出されます。 詳しくは [`InitGlobalData()`](#concepts-asg-initglobaldata) を参照してください。
 
 GAS を有効にするために必要なことはこれだけです。ここからは `Character` または `PlayerState` に [`ASC`](#concepts-asc) と [`AttributeSet`](#concepts-as) を追加して、 [`GameplayAbilities`](#concepts-ga) と [`GameplayEffects`](#concepts-ge) を作り始めましょう！
 
@@ -2814,7 +2814,7 @@ AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
 
 #### 4.9.1 InitGlobalData()
 
-UE 4.24 から、 [`TargetData`](#concepts-targeting-data) を使用するためには、 `UAbilitySystemGlobals::Get().InitGlobalData()` の呼び出しが必要になりました。 さもないと、 `ScriptStructCache` に関係したエラーを受け取り、クライアントはサーバーから切断されるでしょう。 この関数はプロジェクトで一度だけ呼び出される必要があります。 Fortnite では、 `UAssetManager::StartInitialLoading()` で呼び出しており、 Paragon では `UEngine::Init()` で呼び出しています。 サンプルプロジェクトで示されているように、 `UAssetManager::StartInitialLoading()` に配置するのが適切であることがわかりました。 `TargetData` の問題を回避するための、プロジェクトにコピーする必要があるこの定形コードを検討します。
+UE 4.24 から 5.2 では、 [`TargetData`](#concepts-targeting-data) を使用するためには、 `UAbilitySystemGlobals::Get().InitGlobalData()` の呼び出しが必要です。 さもないと、 `ScriptStructCache` に関係したエラーを受け取り、クライアントはサーバーから切断されるでしょう。 この関数はプロジェクトで一度だけ呼び出される必要があります。 Fortnite では、 `UAssetManager::StartInitialLoading()` で呼び出しており、 Paragon では `UEngine::Init()` で呼び出しています。 サンプルプロジェクトで示されているように、 `UAssetManager::StartInitialLoading()` に配置するのが適切であることがわかりました。 `TargetData` の問題を回避するための、プロジェクトにコピーする必要があるこの定形コードを検討します。 5.3からは自動的に呼び出されます。
 
 もし `AbilitySystemGlobals` の `GlobalAttributeSetDefaultsTableNames` を使用している時にクラッシュが発生した場合、 Fortnite のように、 `AssetManager` の中、あるいは `GameInstance` の中で `UAbilitySystemGlobals::Get().InitGlobalData()` を後で呼び出す必要があるかもしれません。
 
@@ -3577,7 +3577,7 @@ if (AbilitySystemComponent)
 
 <a name="troubleshooting-unresolvedexternalsymbolmarkpropertydirty"></a>
 
-### 9.5 unresolved external symbol UEPushModelPrivate::MarkPropertyDirty(int,int)
+### 9.5 Unresolved external symbol UEPushModelPrivate::MarkPropertyDirty(int,int)
 
 以下のようなコンパイルエラーが出た場合：
 
